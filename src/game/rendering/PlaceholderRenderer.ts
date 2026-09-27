@@ -863,93 +863,114 @@ export class PlaceholderRenderer {
   public static renderOrderPanel(ctx: CanvasRenderingContext2D): void {
     ctx.save();
 
-    // Dark backdrop overlay
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    // Dark cinematic backdrop overlay
+    ctx.fillStyle = 'rgba(2, 6, 18, 0.82)';
     ctx.fillRect(0, 0, 1280, 720);
 
-    // Order Panel Modal (Center)
-    const modalX = 390;
-    const modalY = 140;
-    const modalW = 500;
-    const modalH = 410;
+    // Order Panel Modal (Center) - Authentic Courier Dispatch Docket
+    const modalX = 360;
+    const modalY = 120;
+    const modalW = 560;
+    const modalH = 460;
 
-    ctx.fillStyle = '#0f172a';
+    // Outer drop shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 10;
+    ctx.fillStyle = '#08111e';
     ctx.fillRect(modalX, modalY, modalW, modalH);
-    ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 2;
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Metallic beveled border
+    ctx.strokeStyle = '#f97316';
+    ctx.lineWidth = 2.5;
     ctx.strokeRect(modalX, modalY, modalW, modalH);
 
-    // Header bar
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(modalX, modalY, modalW, 60);
-    ctx.strokeStyle = '#334155';
-    ctx.beginPath();
-    ctx.moveTo(modalX, modalY + 60);
-    ctx.lineTo(modalX + modalW, modalY + 60);
-    ctx.stroke();
+    // Top steel binder clip
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(modalX + modalW / 2 - 60, modalY - 10, 120, 18);
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(modalX + modalW / 2 - 60, modalY - 10, 120, 18);
 
-    ctx.fillStyle = '#f59e0b';
-    ctx.font = 'bold 20px system-ui, sans-serif';
+    // Header bar
+    const headGrad = ctx.createLinearGradient(modalX, modalY, modalX + modalW, modalY);
+    headGrad.addColorStop(0, '#ea580c');
+    headGrad.addColorStop(1, '#9a3412');
+    ctx.fillStyle = headGrad;
+    ctx.fillRect(modalX, modalY, modalW, 64);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 20px system-ui, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('PHIẾU GIAO HÀNG #SXP-8924', modalX + 24, modalY + 38);
+    ctx.fillText('📦 PHIẾU GIAO HÀNG HỎA TỐC #SXP-8924', modalX + 24, modalY + 40);
+
+    // Badge: HÀNG DỄ VỠ
+    ctx.fillStyle = '#fef08a';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('⚡ ƯU TIÊN LOẠI 1', modalX + modalW - 24, modalY + 40);
 
     // Content rows
-    const startY = modalY + 95;
-    const lineGap = 42;
+    const startY = modalY + 104;
+    const lineGap = 48;
 
     const details = [
-      { label: 'Khách hàng:', value: 'Chú Tư' },
-      { label: 'Điểm đến:', value: 'Hẻm Không Lối Thoát (Stage 1)' },
-      { label: 'Tình trạng kiện:', value: '100% (Nguyên kiện)' },
-      { label: 'Bảo quản:', value: 'Che lưng • Trúng sau lưng +50% hư kiện' },
-      { label: 'Tiền công nhận:', value: '50.000 VNĐ' },
+      { label: '👤 Người nhận:', value: 'Chú Tư (Tạp hóa đầu hẻm)' },
+      { label: '📍 Địa chỉ giao:', value: 'Cuối Hẻm Không Lối Thoát (Màn 1)' },
+      { label: '📦 Tình trạng kiện:', value: '100% Nguyên Kiện (⭐ Đạt 5 sao)' },
+      { label: '🛡️ Quy cách giữ kiện:', value: 'Balo chống va đập • Tránh bị móc sau lưng' },
+      { label: '💰 Tiền công nhận:', value: '50.000 VNĐ (+ Tiền bo khi kiện tốt)' },
     ];
 
     details.forEach((item, idx) => {
       const rowY = startY + idx * lineGap;
 
+      // Row background zebra
+      ctx.fillStyle = idx % 2 === 0 ? 'rgba(30, 41, 59, 0.45)' : 'rgba(15, 23, 42, 0.3)';
+      ctx.fillRect(modalX + 18, rowY - 18, modalW - 36, 40);
+
       ctx.fillStyle = '#94a3b8';
       ctx.font = '14px system-ui, sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(item.label, modalX + 30, rowY);
+      ctx.fillText(item.label, modalX + 32, rowY + 6);
 
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 15px system-ui, sans-serif';
+      ctx.fillStyle = idx === 4 ? '#4ade80' : idx === 2 ? '#38bdf8' : '#f8fafc';
+      ctx.font = idx === 4 ? 'bold 16px system-ui, sans-serif' : 'bold 14px system-ui, sans-serif';
       ctx.textAlign = 'right';
-      ctx.fillText(item.value, modalX + modalW - 30, rowY);
-
-      // Light divider
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
-      ctx.beginPath();
-      ctx.moveTo(modalX + 30, rowY + 14);
-      ctx.lineTo(modalX + modalW - 30, rowY + 14);
-      ctx.stroke();
+      ctx.fillText(item.value, modalX + modalW - 32, rowY + 6);
     });
 
     // Action buttons footer
-    const btnY = modalY + modalH - 85;
+    const btnY = modalY + modalH - 82;
 
-    // Accept Button
-    ctx.fillStyle = '#ea580c';
-    ctx.fillRect(modalX + 30, btnY, 210, 48);
-    ctx.strokeStyle = '#f97316';
-    ctx.strokeRect(modalX + 30, btnY, 210, 48);
+    // Accept Button with glowing gradient
+    const btnGrad = ctx.createLinearGradient(modalX + 24, btnY, modalX + 264, btnY);
+    btnGrad.addColorStop(0, '#ea580c');
+    btnGrad.addColorStop(1, '#c2410c');
+    ctx.fillStyle = btnGrad;
+    ctx.fillRect(modalX + 24, btnY, 240, 52);
+    ctx.strokeStyle = '#fb923c';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(modalX + 24, btnY, 240, 52);
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 15px system-ui, sans-serif';
+    ctx.font = '900 15px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('[ E ] NHẬN ĐƠN HÀNG', modalX + 135, btnY + 30);
+    ctx.fillText('🚀 [ E ] NHẬN ĐƠN NGAY', modalX + 144, btnY + 32);
 
     // Cancel Button
-    ctx.fillStyle = '#334155';
-    ctx.fillRect(modalX + 260, btnY, 210, 48);
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(modalX + 296, btnY, 240, 52);
     ctx.strokeStyle = '#475569';
-    ctx.strokeRect(modalX + 260, btnY, 210, 48);
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(modalX + 296, btnY, 240, 52);
 
     ctx.fillStyle = '#cbd5e1';
     ctx.font = 'bold 15px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('[ Esc ] HỦY BỎ', modalX + 365, btnY + 30);
+    ctx.fillText('[ Esc ] ĐỂ LẠI SAU', modalX + 416, btnY + 32);
 
     ctx.restore();
   }
@@ -975,128 +996,272 @@ export class PlaceholderRenderer {
   ): void {
     ctx.save();
 
-    // Street-brawler status card: strong silhouette, compact grid and inset bars.
-    const cardX = 20, cardY = 16, cardW = 320, cardH = 116;
-    ctx.shadowColor = 'rgba(0,0,0,0.58)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 4;
-    ctx.fillStyle = 'rgba(5, 12, 25, 0.95)'; ctx.fillRect(cardX, cardY, cardW, cardH);
-    ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-    ctx.strokeStyle = 'rgba(148,163,184,0.28)'; ctx.lineWidth = 1; ctx.strokeRect(cardX, cardY, cardW, cardH);
-    ctx.fillStyle = '#f97316'; ctx.fillRect(cardX, cardY, 4, cardH);
-    ctx.fillStyle = 'rgba(249,115,22,0.1)'; ctx.fillRect(cardX + 4, cardY, cardW - 4, 24);
-    ctx.fillStyle = '#fff7ed'; ctx.font = '900 11px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillText('HỘI KHỜ', 38, 33);
-    ctx.fillStyle = '#fb923c'; ctx.font = 'bold 8px monospace'; ctx.fillText('SXP • CA ĐANG CHẠY', 105, 33);
+    // ==========================================
+    // 1. ARCADE STREET-BRAWLER STATUS CARD (Top-Left)
+    // ==========================================
+    const cardX = 20, cardY = 16, cardW = 346, cardH = 122;
 
-    // HP Bar
-    ctx.fillStyle = '#fb7185'; ctx.beginPath(); ctx.arc(42, 52, 4, 0, Math.PI * 2); ctx.arc(49, 52, 4, 0, Math.PI * 2); ctx.lineTo(45.5, 62); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#fecdd3'; ctx.font = 'bold 10px system-ui, sans-serif'; ctx.fillText('HP', 60, 59);
+    // Drop shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.65)';
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 6;
+    ctx.fillStyle = '#060e1c';
+    ctx.fillRect(cardX, cardY, cardW, cardH);
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Metallic frame with neon orange accent
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(cardX, cardY, cardW, cardH);
+
+    // Left orange brand strip
+    ctx.fillStyle = '#f97316';
+    ctx.fillRect(cardX, cardY, 5, cardH);
+
+    // Top Header Banner
+    ctx.fillStyle = 'rgba(249, 115, 22, 0.12)';
+    ctx.fillRect(cardX + 5, cardY, cardW - 5, 26);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 13px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('HỘI KHỜ', cardX + 16, cardY + 18);
+
+    ctx.fillStyle = '#fb923c';
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText('SXP • SHIPPER TẬP SỰ', cardX + 90, cardY + 18);
+
+    // Level / Area marker
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('MÀN 1: SÀI GÒN', cardX + cardW - 14, cardY + 18);
+
+    // --- HP BAR ---
+    const hpLabelX = cardX + 16;
+    const hpY = cardY + 36;
+    const barX = cardX + 52;
+    const barW = 210;
+    const barH = 18;
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#f87171';
+    ctx.font = '900 11px system-ui, sans-serif';
+    ctx.fillText('HP', hpLabelX, hpY + 14);
+
+    // Bar Slot Background
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(barX, hpY, barW, barH);
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX, hpY, barW, barH);
 
     const hpPct = Math.max(0, player.hp / player.maxHp);
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(94, 47, 172, 13);
-    ctx.fillStyle = player.hp > 30 ? '#22c55e' : '#ef4444';
-    ctx.fillRect(96, 49, 168 * hpPct, 9);
+    const hpGrad = ctx.createLinearGradient(barX, hpY, barX + barW, hpY);
+    if (player.hp > 30) {
+      hpGrad.addColorStop(0, '#22c55e');
+      hpGrad.addColorStop(1, '#4ade80');
+    } else {
+      hpGrad.addColorStop(0, '#dc2626');
+      hpGrad.addColorStop(1, '#f87171');
+    }
+    ctx.fillStyle = hpGrad;
+    ctx.fillRect(barX + 2, hpY + 2, Math.max(0, (barW - 4) * hpPct), barH - 4);
+
+    // Gloss line
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.fillRect(barX + 2, hpY + 2, Math.max(0, (barW - 4) * hpPct), 4);
 
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 11px monospace';
-    ctx.textAlign = 'right'; ctx.fillText(`${Math.round(player.hp)}/${player.maxHp}`, 326, 58);
+    ctx.textAlign = 'right';
+    ctx.fillText(`${Math.round(player.hp)}/${player.maxHp}`, cardX + cardW - 14, hpY + 14);
 
+    // --- PARCEL INTEGRITY BAR ---
+    const parcelY = hpY + 26;
     const objective = ObjectiveSystem.getInstance();
     const parcelLabel = objective.parcelProfile?.shortLabel ?? 'KIỆN';
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 12px system-ui, sans-serif';
-    ctx.fillStyle = '#38bdf8'; ctx.fillRect(38, 70, 14, 11); ctx.strokeStyle = '#bae6fd'; ctx.strokeRect(38, 70, 14, 11);
-    ctx.textAlign = 'left'; ctx.fillStyle = '#bae6fd'; ctx.fillText(parcelLabel, 60, 80);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '900 11px system-ui, sans-serif';
+    ctx.fillText('KIỆN', hpLabelX, parcelY + 14);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(barX, parcelY, barW, barH);
+    ctx.strokeStyle = '#334155';
+    ctx.strokeRect(barX, parcelY, barW, barH);
 
     const parcelPct = Math.max(0, parcelCondition / BALANCE.PARCEL_MAX_CONDITION);
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(94, 69, 172, 13);
-    ctx.fillStyle = parcelCondition > 70 ? '#38bdf8' : parcelCondition > 30 ? '#fbbf24' : '#fb7185';
-    ctx.fillRect(96, 71, 168 * parcelPct, 9);
+    const parcelGrad = ctx.createLinearGradient(barX, parcelY, barX + barW, parcelY);
+    if (parcelCondition > 70) {
+      parcelGrad.addColorStop(0, '#0284c7');
+      parcelGrad.addColorStop(1, '#38bdf8');
+    } else if (parcelCondition > 30) {
+      parcelGrad.addColorStop(0, '#d97706');
+      parcelGrad.addColorStop(1, '#fbbf24');
+    } else {
+      parcelGrad.addColorStop(0, '#dc2626');
+      parcelGrad.addColorStop(1, '#f87171');
+    }
+    ctx.fillStyle = parcelGrad;
+    ctx.fillRect(barX + 2, parcelY + 2, Math.max(0, (barW - 4) * parcelPct), barH - 4);
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.fillRect(barX + 2, parcelY + 2, Math.max(0, (barW - 4) * parcelPct), 4);
 
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 11px monospace';
-    ctx.textAlign = 'right'; ctx.fillText(`${Math.round(parcelCondition)}%`, 326, 80);
+    ctx.textAlign = 'right';
+    ctx.fillText(`${Math.round(parcelCondition)}%`, cardX + cardW - 14, parcelY + 14);
 
-    // Momentum / Ultimate Gauge
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 12px system-ui, sans-serif';
-    ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.moveTo(45, 89); ctx.lineTo(38, 100); ctx.lineTo(45, 100); ctx.lineTo(42, 109); ctx.lineTo(55, 96); ctx.lineTo(49, 96); ctx.closePath(); ctx.fill();
-    ctx.textAlign = 'left'; ctx.fillStyle = '#fde68a'; ctx.fillText('Q', 60, 102);
+    // --- MOMENTUM / ULTIMATE GAUGE (Q) ---
+    const momY = parcelY + 26;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = '900 11px system-ui, sans-serif';
+    ctx.fillText('⚡ Q', hpLabelX, momY + 14);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(barX, momY, barW, barH);
+    ctx.strokeStyle = '#334155';
+    ctx.strokeRect(barX, momY, barW, barH);
 
     const momentumPct = Math.min(1, player.momentum / BALANCE.MOMENTUM_MAX);
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(94, 91, 172, 13);
-    ctx.fillStyle = player.momentum >= BALANCE.ULTIMATE_COST ? '#f59e0b' : '#f97316';
-    ctx.fillRect(96, 93, 168 * momentumPct, 9);
+    const isQReady = player.momentum >= BALANCE.ULTIMATE_COST;
+    const momGrad = ctx.createLinearGradient(barX, momY, barX + barW, momY);
+    momGrad.addColorStop(0, '#ea580c');
+    momGrad.addColorStop(1, isQReady ? '#fbbf24' : '#f97316');
+    ctx.fillStyle = momGrad;
+    ctx.fillRect(barX + 2, momY + 2, Math.max(0, (barW - 4) * momentumPct), barH - 4);
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 11px monospace';
-    if (player.momentum >= BALANCE.ULTIMATE_COST) {
-      ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.fillRect(barX + 2, momY + 2, Math.max(0, (barW - 4) * momentumPct), 4);
+
+    if (isQReady) {
       const pulse = 0.72 + Math.sin(performance.now() / 130) * 0.28;
-      ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 10 * pulse;
-      ctx.textAlign = 'right'; ctx.fillText('Q READY!', 326, 102); ctx.shadowBlur = 0;
+      ctx.shadowColor = '#fbbf24';
+      ctx.shadowBlur = 10 * pulse;
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(barX, momY, barW, barH);
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText('Q READY!', cardX + cardW - 14, momY + 14);
+      ctx.shadowBlur = 0;
     } else {
-      ctx.textAlign = 'right'; ctx.fillText(`${Math.round(player.momentum)}%`, 326, 102);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${Math.round(player.momentum)}%`, cardX + cardW - 14, momY + 14);
     }
 
     // Bonus Reward pill
     if (bonusReward > 0) {
       ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 11px monospace';
-      ctx.textAlign = 'left'; ctx.fillText(`BONUS +${bonusReward.toLocaleString()} VNĐ`, 40, 176);
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`BONUS +${bonusReward.toLocaleString()} VNĐ`, 40, cardY + cardH + 26);
     }
 
-    // Dispatch slip: restrained border, clear hierarchy, no internal zone IDs.
-    ctx.fillStyle = 'rgba(7,15,29,0.91)'; ctx.fillRect(420, 16, 520, 60);
-    ctx.fillStyle = '#fb923c'; ctx.fillRect(420, 16, 3, 60);
-    ctx.textAlign = 'left'; ctx.fillStyle = '#fb923c'; ctx.font = 'bold 10px system-ui';
-    ctx.fillText('ĐƠN ĐANG GIAO', 438, 34);
-    ctx.fillStyle = '#f8fafc'; ctx.font = '14px system-ui, sans-serif';
-    ctx.fillText(objectiveName.replace(/^MỤC TIÊU:\s*/, ''), 438, 58, 484);
+    // ==========================================
+    // 2. DISPATCH SLIP (Top Center)
+    // ==========================================
+    ctx.fillStyle = 'rgba(7, 15, 29, 0.94)';
+    ctx.fillRect(420, 16, 520, 60);
+    ctx.fillStyle = '#fb923c';
+    ctx.fillRect(420, 16, 4, 60);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(420, 16, 520, 60);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#fb923c';
+    ctx.font = 'bold 11px system-ui';
+    ctx.fillText('📦 ĐƠN ĐANG GIAO (SXP-8924)', 438, 35);
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.fillText(objectiveName.replace(/^MỤC TIÊU:\s*/, ''), 438, 59, 484);
 
     const damageAge = (performance.now() - objective.parcelDamageAt) / 1000;
     const repairAge = (performance.now() - objective.parcelRepairAt) / 1000;
     if (repairAge < 1.8 && objective.lastParcelRepair > 0) {
       ctx.globalAlpha = Math.min(1, (1.8 - repairAge) * 2);
-      ctx.fillStyle = '#67e8f9'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'left';
-      ctx.fillText(`+${objective.lastParcelRepair.toFixed(0)}% GIA CỐ KIỆN`, 40, 153);
-      ctx.strokeStyle = '#67e8f9'; ctx.lineWidth = 2; ctx.strokeRect(94, 69, 172, 13);
+      ctx.fillStyle = '#67e8f9';
+      ctx.font = 'bold 14px system-ui';
+      ctx.textAlign = 'left';
+      ctx.fillText(`+${objective.lastParcelRepair.toFixed(0)}% GIA CỐ KIỆN`, 40, 168);
+      ctx.strokeStyle = '#67e8f9';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(barX, parcelY, barW, barH);
       ctx.globalAlpha = 1;
     } else if (damageAge < 1.6 && objective.lastParcelDamage > 0) {
       ctx.globalAlpha = Math.min(1, (1.6 - damageAge) * 2);
-      ctx.fillStyle = '#fb7185'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'left';
-      ctx.fillText(`−${objective.lastParcelDamage.toFixed(0)}% [${parcelLabel}]`, 40, 153);
-      ctx.strokeStyle = '#fb7185'; ctx.lineWidth = 2; ctx.strokeRect(94, 69, 172, 13);
+      ctx.fillStyle = '#fb7185';
+      ctx.font = 'bold 14px system-ui';
+      ctx.textAlign = 'left';
+      ctx.fillText(`−${objective.lastParcelDamage.toFixed(0)}% [${parcelLabel}]`, 40, 168);
+      ctx.strokeStyle = '#fb7185';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(barX, parcelY, barW, barH);
       ctx.globalAlpha = 1;
     } else if (objective.state === 'IN_DELIVERY' && parcelCondition <= 70) {
-      ctx.fillStyle = parcelCondition <= 30 ? '#fb7185' : '#fbbf24'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'left';
-      ctx.fillText(parcelCondition <= 30 ? 'KIỆN SẮP HỎNG — NÉ TRƯỚC!' : 'KIỆN BỊ MÓP — GIỮ CẨN THẬN', 38, 153);
+      ctx.fillStyle = parcelCondition <= 30 ? '#fb7185' : '#fbbf24';
+      ctx.font = 'bold 12px system-ui';
+      ctx.textAlign = 'left';
+      ctx.fillText(parcelCondition <= 30 ? '⚠️ KIỆN SẮP HỎNG — NÉ ĐÒN TRƯỚC!' : '⚠️ KIỆN BỊ MÓP — CẨN THẬN!', 40, 168);
     }
 
-    // Bottom-Center: Interaction Prompt
+    // ==========================================
+    // 3. INTERACTION PROMPT (Bottom Center)
+    // ==========================================
     if (nearbyPrompt) {
-      ctx.fillStyle = 'rgba(7,15,29,0.95)';
-      ctx.fillRect(440, 584, 400, 36);
+      ctx.fillStyle = 'rgba(7,15,29,0.96)';
+      ctx.fillRect(440, 580, 400, 40);
       ctx.strokeStyle = '#fb923c';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(440, 584, 400, 36);
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(440, 580, 400, 40);
 
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 13px system-ui, sans-serif';
+      ctx.font = 'bold 14px system-ui, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`[ E ] ${nearbyPrompt.replace(/\[\s*E\s*\]/g, '').trim()}`, 640, 607, 376);
+      ctx.fillText(`[ E ] ${nearbyPrompt.replace(/\[\s*E\s*\]/g, '').trim()}`, 640, 605, 376);
     }
 
+    // ==========================================
+    // 4. DEBT PROGRESS (Top Right)
+    // ==========================================
     const economy = EconomySystem.getInstance().getSnapshot();
     const paidRatio = economy.initialDebt > 0 ? economy.debtPaid / economy.initialDebt : 1;
-    ctx.fillStyle = 'rgba(7,15,29,0.91)'; ctx.fillRect(970, 16, 280, 60);
-    ctx.fillStyle = '#fb923c'; ctx.fillRect(970, 16, 3, 60);
-    ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'left'; ctx.fillText('HÀNH TRÌNH TRẢ NỢ', 986, 34);
-    ctx.fillStyle = '#f8fafc'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'right'; ctx.fillText(`${economy.remainingDebt.toLocaleString()} ₫`, 1234, 34);
-    ctx.fillStyle = '#1e293b'; ctx.fillRect(986, 48, 248, 10);
-    ctx.fillStyle = economy.remainingDebt <= 0 ? '#22c55e' : '#fb923c'; ctx.fillRect(986, 48, 248 * paidRatio, 10);
-    ctx.fillStyle = '#64748b'; ctx.font = '9px monospace'; ctx.textAlign = 'left'; ctx.fillText(`${economy.deliveriesCompleted} đơn đã giao`, 986, 70);
+    ctx.fillStyle = 'rgba(7, 15, 29, 0.94)';
+    ctx.fillRect(970, 16, 280, 60);
+    ctx.fillStyle = '#fb923c';
+    ctx.fillRect(970, 16, 4, 60);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(970, 16, 280, 60);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 11px system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillText('💰 HÀNH TRÌNH TRẢ NỢ', 986, 35);
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${economy.remainingDebt.toLocaleString()} ₫`, 1234, 35);
+
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(986, 48, 248, 10);
+    ctx.fillStyle = economy.remainingDebt <= 0 ? '#22c55e' : '#fb923c';
+    ctx.fillRect(986, 48, 248 * paidRatio, 10);
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${economy.deliveriesCompleted} đơn đã giao`, 986, 70);
 
     ctx.restore();
   }

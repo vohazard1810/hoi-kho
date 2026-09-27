@@ -789,35 +789,44 @@ export class Renderer {
 
     this.ctx.save();
     // Backdrop dark scrim
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+    this.ctx.fillStyle = 'rgba(2, 6, 18, 0.82)';
     this.ctx.fillRect(0, 0, 1280, 720);
 
-    // Modal background
-    this.ctx.fillStyle = 'rgba(15, 23, 42, 0.98)';
+    // Modal background - Carbon-slate workshop aesthetic
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    this.ctx.shadowBlur = 28;
+    this.ctx.shadowOffsetY = 8;
+    this.ctx.fillStyle = '#070f1e';
     this.ctx.fillRect(x, y, w, h);
+    this.ctx.shadowBlur = 0;
+    this.ctx.shadowOffsetY = 0;
+
     this.ctx.strokeStyle = '#f97316';
-    this.ctx.lineWidth = 3;
+    this.ctx.lineWidth = 2.5;
     this.ctx.strokeRect(x, y, w, h);
 
-    // Header bar
-    this.ctx.fillStyle = '#1e293b';
+    // Header bar with industrial gradient
+    const headGrad = this.ctx.createLinearGradient(x, y, x + w, y);
+    headGrad.addColorStop(0, '#ea580c');
+    headGrad.addColorStop(1, '#7c2d12');
+    this.ctx.fillStyle = headGrad;
     this.ctx.fillRect(x, y, w, 64);
-    this.ctx.strokeStyle = '#334155';
+    this.ctx.strokeStyle = '#f97316';
     this.ctx.beginPath();
     this.ctx.moveTo(x, y + 64);
     this.ctx.lineTo(x + w, y + 64);
     this.ctx.stroke();
 
-    this.ctx.fillStyle = '#f97316';
-    this.ctx.font = 'bold 22px system-ui, sans-serif';
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.font = '900 22px system-ui, sans-serif';
     this.ctx.textAlign = 'left';
-    this.ctx.fillText('BÀN ĐỒ NGHỀ SHIPPER', x + 28, y + 40);
+    this.ctx.fillText('🛠️ BÀN ĐỒ NGHỀ SHIPPER • SXP WORKSHOP', x + 28, y + 41);
 
     // Right-aligned header stats
     this.ctx.fillStyle = '#fef08a';
     this.ctx.font = 'bold 15px monospace';
     this.ctx.textAlign = 'right';
-    this.ctx.fillText(`⚙ ${snapshot.parts} LINH KIỆN   •   ⭐ UY TÍN ${snapshot.reputation}   •   TIER ${snapshot.unlockedTier}`, x + w - 28, y + 40);
+    this.ctx.fillText(`⚙ ${snapshot.parts} LINH KIỆN   •   ⭐ UY TÍN ${snapshot.reputation}   •   TIER ${snapshot.unlockedTier}`, x + w - 28, y + 41);
 
     // Grid of 12 upgrades (2 cols x 6 rows)
     snapshot.definitions.forEach((definition, index) => {
@@ -834,20 +843,25 @@ export class Renderer {
       const isSelected = index === selectedIndex;
 
       // Card Background
-      this.ctx.fillStyle = locked
-        ? 'rgba(15, 23, 42, 0.7)'
+      this.ctx.fillStyle = isSelected
+        ? 'rgba(67, 36, 12, 0.95)'
+        : locked
+        ? 'rgba(15, 23, 42, 0.65)'
         : equipped
-        ? 'rgba(6, 78, 59, 0.85)'
+        ? 'rgba(6, 78, 59, 0.88)'
         : owned
-        ? 'rgba(30, 58, 138, 0.6)'
-        : 'rgba(30, 41, 59, 0.9)';
+        ? 'rgba(30, 58, 138, 0.65)'
+        : 'rgba(23, 37, 84, 0.5)';
       this.ctx.fillRect(cardX, cardY, cardW, cardH);
 
       // Card Border / Selection
       if (isSelected) {
-        this.ctx.strokeStyle = '#f97316';
+        this.ctx.strokeStyle = '#f59e0b';
         this.ctx.lineWidth = 3;
+        this.ctx.shadowColor = '#f59e0b';
+        this.ctx.shadowBlur = 8;
         this.ctx.strokeRect(cardX, cardY, cardW, cardH);
+        this.ctx.shadowBlur = 0;
       } else {
         this.ctx.strokeStyle = equipped
           ? '#22c55e'
@@ -864,10 +878,10 @@ export class Renderer {
       const branchColors: Record<string, string> = { J: '#38bdf8', K: '#fde047', L: '#4ade80', Q: '#c084fc' };
       const badgeColor = branchColors[definition.branch] ?? '#94a3b8';
 
-      this.ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      this.ctx.fillStyle = 'rgba(0,0,0,0.5)';
       this.ctx.fillRect(cardX + 10, cardY + 12, 42, 40);
       this.ctx.strokeStyle = badgeColor;
-      this.ctx.lineWidth = 1;
+      this.ctx.lineWidth = 1.2;
       this.ctx.strokeRect(cardX + 10, cardY + 12, 42, 40);
 
       EquipmentVisualRenderer.renderUpgradeIcon(this.ctx, definition.id, cardX + 13, cardY + 15, 34, locked ? 0.3 : 1);
@@ -1044,21 +1058,38 @@ export class Renderer {
     this.renderContactShadow(camera, player, STAGE_HUMAN_SCALE);
     this.renderEntityPlayer(camera, player, upgradeSnapshot, STAGE_HUMAN_SCALE);
 
-    // Sticky Tape status is rendered independently from AI state so it cannot
-    // block or reset enemy attack state machines.
+    // Sticky Tape status is rendered as authentic parcel tape wraps around the target
     const slowTargets = [...dogs, ...rivals, ...thugs, ...bossDogs];
     this.ctx.save();
     for (const target of slowTargets) {
       if (!slowedTargetIds.has(target.id)) continue;
       const box = target.getHurtbox();
-      const center = camera.worldToScreen(box.x + box.width / 2, box.y + box.height);
-      this.ctx.strokeStyle = 'rgba(34,211,238,0.9)';
-      this.ctx.fillStyle = 'rgba(34,211,238,0.16)';
-      this.ctx.lineWidth = 3;
+      const center = camera.worldToScreen(box.x + box.width / 2, box.y + box.height * 0.55);
+      const top = camera.worldToScreen(box.x + box.width / 2, box.y);
+
+      // Render criss-cross sticky tape bands across enemy body
+      this.ctx.lineWidth = 5;
+      this.ctx.strokeStyle = '#fde047';
       this.ctx.beginPath();
-      this.ctx.ellipse(center.x, center.y - 3, box.width * 0.7, 8, 0, 0, Math.PI * 2);
-      this.ctx.fill();
+      this.ctx.moveTo(center.x - box.width * 0.42, center.y - 12);
+      this.ctx.lineTo(center.x + box.width * 0.42, center.y + 10);
       this.ctx.stroke();
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(center.x - box.width * 0.42, center.y + 10);
+      this.ctx.lineTo(center.x + box.width * 0.42, center.y - 12);
+      this.ctx.stroke();
+
+      // Floating status tag above head
+      this.ctx.fillStyle = 'rgba(7, 15, 29, 0.9)';
+      this.ctx.fillRect(top.x - 50, top.y - 22, 100, 18);
+      this.ctx.strokeStyle = '#fde047';
+      this.ctx.lineWidth = 1.2;
+      this.ctx.strokeRect(top.x - 50, top.y - 22, 100, 18);
+      this.ctx.fillStyle = '#fef08a';
+      this.ctx.font = 'bold 10px system-ui';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText('📦 DÍNH BĂNG KEO', top.x, top.y - 10);
     }
     this.ctx.restore();
 
@@ -1113,26 +1144,120 @@ export class Renderer {
     }
     this.ctx.restore();
 
-    // Ultimate activation pulse is independent from hit confirmation, so Q
-    // remains readable even when no enemy is inside the damage hitbox.
+    // Floating Vietnamese Comic Action Hit Text (BỐP, CHÁT, HUỲNH, HỎA TỐC)
     this.ctx.save();
-    this.ctx.globalCompositeOperation = 'screen';
+    for (const hit of gameFeel.comicTexts) {
+      const screen = camera.worldToScreen(hit.x, hit.y);
+      const progress = hit.life / hit.maxLife;
+      this.ctx.globalAlpha = Math.min(1, progress * 1.5);
+      this.ctx.font = `900 ${hit.size}px system-ui, sans-serif`;
+      this.ctx.textAlign = 'center';
+
+      // Drop shadow for punchy pop
+      this.ctx.fillStyle = '#020617';
+      this.ctx.fillText(hit.text, screen.x + 2, screen.y + 2);
+
+      this.ctx.fillStyle = hit.color;
+      this.ctx.fillText(hit.text, screen.x, screen.y);
+    }
+    this.ctx.restore();
+
+    // Ultimate Q Explosive Energy Shockwave & Comic Callout
+    this.ctx.save();
     for (const pulse of gameFeel.ultimatePulses) {
       const progress = 1 - pulse.life / pulse.maxLife;
       const screen = camera.worldToScreen(pulse.x, pulse.y);
-      const radius = 18 + pulse.maxRadius * progress;
-      this.ctx.globalAlpha = Math.max(0, 1 - progress);
-      this.ctx.strokeStyle = progress < 0.45 ? '#FFFFFF' : '#C084FC';
-      this.ctx.lineWidth = Math.max(2, 7 * (1 - progress));
+      const radius = 24 + pulse.maxRadius * progress;
+      const alpha = Math.max(0, 1 - progress);
+
+      // Layer 1: Outer lightning burst ring
+      this.ctx.save();
+      this.ctx.globalAlpha = alpha * 0.9;
+      this.ctx.strokeStyle = progress < 0.35 ? '#ffffff' : '#fbbf24';
+      this.ctx.lineWidth = Math.max(2, 9 * (1 - progress));
       this.ctx.beginPath();
       this.ctx.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
       this.ctx.stroke();
-      this.ctx.fillStyle = 'rgba(192,132,252,0.18)';
+
+      // Layer 2: Fiery inner radial shockwave
+      const grad = this.ctx.createRadialGradient(screen.x, screen.y, 0, screen.x, screen.y, radius);
+      grad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
+      grad.addColorStop(0.3, 'rgba(249, 115, 22, 0.3)');
+      grad.addColorStop(0.7, 'rgba(234, 88, 12, 0.15)');
+      grad.addColorStop(1, 'rgba(234, 88, 12, 0)');
+      this.ctx.fillStyle = grad;
       this.ctx.beginPath();
-      this.ctx.arc(screen.x, screen.y, radius * 0.72, 0, Math.PI * 2);
+      this.ctx.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
       this.ctx.fill();
+
+      // Layer 3: Radiating shockwave speed spikes
+      this.ctx.strokeStyle = '#fde047';
+      this.ctx.lineWidth = 3;
+      for (let a = 0; a < 8; a++) {
+        const ang = (Math.PI * 2 * a) / 8 + progress * 0.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(screen.x + Math.cos(ang) * (radius * 0.5), screen.y + Math.sin(ang) * (radius * 0.5));
+        this.ctx.lineTo(screen.x + Math.cos(ang) * (radius * 1.15), screen.y + Math.sin(ang) * (radius * 1.15));
+        this.ctx.stroke();
+      }
+      this.ctx.restore();
+
+      // Cinematic Screen Banner during Ultimate
+      if (progress < 0.6) {
+        this.ctx.save();
+        const bannerAlpha = Math.min(1, (0.6 - progress) * 3);
+        this.ctx.globalAlpha = bannerAlpha;
+        const bannerW = 440;
+        const bannerH = 46;
+        const bannerX = 640 - bannerW / 2;
+        const bannerY = 85;
+
+        this.ctx.fillStyle = 'rgba(7, 15, 29, 0.95)';
+        this.ctx.fillRect(bannerX, bannerY, bannerW, bannerH);
+        this.ctx.strokeStyle = '#f59e0b';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.strokeRect(bannerX, bannerY, bannerW, bannerH);
+
+        this.ctx.font = '900 20px system-ui, sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillStyle = '#fef08a';
+        this.ctx.shadowColor = '#f59e0b';
+        this.ctx.shadowBlur = 12;
+        this.ctx.fillText('⚡ TUYỆT KỸ: HỎA TỐC BƯU CỤC! ⚡', 640, bannerY + 31);
+        this.ctx.restore();
+      }
     }
     this.ctx.restore();
+
+    // Arcade Combo Counter (Right Side)
+    if (gameFeel.comboStreak >= 2) {
+      this.ctx.save();
+      const comboX = 1240;
+      const comboY = 220;
+      const pulse = 1 + Math.sin(performance.now() / 90) * 0.08;
+
+      this.ctx.translate(comboX, comboY);
+      this.ctx.scale(pulse, pulse);
+
+      this.ctx.fillStyle = 'rgba(7, 15, 29, 0.9)';
+      this.ctx.fillRect(-190, -22, 190, 44);
+      this.ctx.strokeStyle = '#f59e0b';
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeRect(-190, -22, 190, 44);
+
+      this.ctx.font = '900 22px system-ui, sans-serif';
+      this.ctx.textAlign = 'right';
+      this.ctx.fillStyle = '#fbbf24';
+      this.ctx.shadowColor = '#f59e0b';
+      this.ctx.shadowBlur = 10;
+      this.ctx.fillText(`🔥 ${gameFeel.comboStreak} HITS!`, -12, 3);
+      this.ctx.shadowBlur = 0;
+
+      this.ctx.font = 'bold 11px system-ui';
+      this.ctx.fillStyle = '#f8fafc';
+      this.ctx.fillText('COMBO SHIPPER', -12, 18);
+      this.ctx.restore();
+    }
 
     // 6. Boss Bar if Boss is active in Zone E
     const activeBoss = bossDogs.find((b) => b.isAlive);

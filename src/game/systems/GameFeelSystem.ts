@@ -4,7 +4,16 @@ import { AudioSink, meleeHitSfx } from '../audio/AudioManager';
 export interface ImpactParticle { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; size: number; color: string; }
 export interface UltimatePulse { x: number; y: number; life: number; maxLife: number; maxRadius: number; }
 export interface ParcelShieldPulse { x: number; y: number; life: number; maxLife: number; }
-export interface GameFeelSnapshot { particles: readonly ImpactParticle[]; ultimatePulses: readonly UltimatePulse[]; parcelShieldPulses: readonly ParcelShieldPulse[]; flashingTargetIds: ReadonlySet<string>; hitStopRemaining: number; }
+export interface ComicHitText { id: string; text: string; x: number; y: number; vy: number; life: number; maxLife: number; color: string; size: number; }
+export interface GameFeelSnapshot {
+  particles: readonly ImpactParticle[];
+  ultimatePulses: readonly UltimatePulse[];
+  parcelShieldPulses: readonly ParcelShieldPulse[];
+  flashingTargetIds: ReadonlySet<string>;
+  hitStopRemaining: number;
+  comicTexts: readonly ComicHitText[];
+  comboStreak: number;
+}
 
 export class GameFeelSystem {
   private hitStopRemaining = 0;
@@ -13,10 +22,23 @@ export class GameFeelSystem {
   private parcelShieldPulses: ParcelShieldPulse[] = [];
   private flashes = new Map<string, number>();
   private shakeRequest: { intensity: number; duration: number } | null = null;
+  private comicTexts: ComicHitText[] = [];
+  private comboStreak = 0;
+  private comboStreakTimer = 0;
 
   constructor(private readonly audio?: AudioSink) {}
 
-  public reset(): void { this.hitStopRemaining = 0; this.particles = []; this.ultimatePulses = []; this.parcelShieldPulses = []; this.flashes.clear(); this.shakeRequest = null; }
+  public reset(): void {
+    this.hitStopRemaining = 0;
+    this.particles = [];
+    this.ultimatePulses = [];
+    this.parcelShieldPulses = [];
+    this.flashes.clear();
+    this.shakeRequest = null;
+    this.comicTexts = [];
+    this.comboStreak = 0;
+    this.comboStreakTimer = 0;
+  }
 
   /** Advances visual timers and returns true while simulation should freeze. */
   public update(dt: number): boolean {
@@ -32,30 +54,67 @@ export class GameFeelSystem {
     this.ultimatePulses = this.ultimatePulses.filter((pulse) => pulse.life > 0);
     for (const pulse of this.parcelShieldPulses) pulse.life -= dt;
     this.parcelShieldPulses = this.parcelShieldPulses.filter((pulse) => pulse.life > 0);
+
+    for (const c of this.comicTexts) {
+      c.life -= dt;
+      c.y += c.vy * dt;
+    }
+    this.comicTexts = this.comicTexts.filter((c) => c.life > 0);
+
+    if (this.comboStreakTimer > 0) {
+      this.comboStreakTimer -= dt;
+      if (this.comboStreakTimer <= 0) this.comboStreak = 0;
+    }
+
     return frozen;
   }
 
   /** Activation feedback is visible even when the ultimate does not hit a target. */
   public triggerUltimateActivation(x: number, y: number): void {
-    this.ultimatePulses.push({ x, y, life: 0.42, maxLife: 0.42, maxRadius: 150 });
-    this.shakeRequest = { intensity: 3.5, duration: 0.18 };
-    this.spawnImpact(x, y, 18, '#C084FC');
+    this.ultimatePulses.push({ x, y, life: 0.65, maxLife: 0.65, maxRadius: 240 });
+    this.shakeRequest = { intensity: 7.5, duration: 0.28 };
+    this.spawnImpact(x, y, 32, '#F59E0B');
+    this.spawnImpact(x, y, 16, '#FBBF24');
+    this.addComicText('💥 HỎA TỐC BƯU CỤC! 💥', x, y - 48, '#FBBF24', 26);
   }
 
   public triggerMeleeHit(combo: AttackComboStep, targetIds: string[], x: number, y: number): void {
     if (targetIds.length === 0) return;
+    this.comboStreak++;
+    this.comboStreakTimer = 2.2;
+
     this.audio?.play(meleeHitSfx(combo));
     if (combo === 'J3') this.audio?.duckMusic?.(-3, 175);
     if (combo === 'ULTIMATE') this.audio?.duckMusic?.(-4, 230);
     const profile = combo === 'ULTIMATE'
-      ? { stop: 0.13, shake: 8, duration: 0.2, particles: 14 }
-      : combo === 'J3' ? { stop: 0.11, shake: 5, duration: 0.16, particles: 11 }
-      : combo === 'J2' ? { stop: 0.08, shake: 3, duration: 0.12, particles: 8 }
-      : { stop: 0.065, shake: 2, duration: 0.1, particles: 6 };
+      ? { stop: 0.10, shake: 8, duration: 0.2, particles: 20 }
+      : combo === 'J3' ? { stop: 0.08, shake: 5, duration: 0.16, particles: 12 }
+      : combo === 'J2' ? { stop: 0.05, shake: 3, duration: 0.12, particles: 8 }
+      : { stop: 0.04, shake: 2, duration: 0.1, particles: 6 };
     this.hitStopRemaining = Math.max(this.hitStopRemaining, profile.stop);
     for (const id of targetIds) this.flashes.set(id, 0.09);
     this.shakeRequest = { intensity: profile.shake, duration: profile.duration };
     this.spawnImpact(x, y, profile.particles, combo === 'ULTIMATE' ? '#FFE36A' : '#FF8A2A');
+
+    // Spawn floating Vietnamese comic action text
+    if (combo === 'J1') this.addComicText('BỐP!', x, y - 24, '#FEF08A', 16);
+    else if (combo === 'J2') this.addComicText('CHÁT!', x, y - 28, '#FDBA74', 19);
+    else if (combo === 'J3') this.addComicText('HUỲNH!', x, y - 34, '#F87171', 23);
+    else if (combo === 'ULTIMATE') this.addComicText('HỎA TỐC! 💥', x, y - 40, '#FBBF24', 28);
+  }
+
+  private addComicText(text: string, x: number, y: number, color: string, size: number): void {
+    this.comicTexts.push({
+      id: `comic_${Date.now()}_${Math.random()}`,
+      text,
+      x: x + (Math.random() * 24 - 12),
+      y,
+      vy: -55,
+      life: 0.65,
+      maxLife: 0.65,
+      color,
+      size,
+    });
   }
 
   public triggerProjectileHit(targetIds: string[], x: number, y: number): void {
@@ -97,8 +156,17 @@ export class GameFeelSystem {
     this.spawnImpact(x, y, 12, '#67E8F9');
   }
 
-  public consumeShakeRequest(): { intensity: number; duration: number } | null { const r = this.shakeRequest; this.shakeRequest = null; return r; }
-  public getSnapshot(): GameFeelSnapshot { return { particles: this.particles, ultimatePulses: this.ultimatePulses, parcelShieldPulses: this.parcelShieldPulses, flashingTargetIds: new Set(this.flashes.keys()), hitStopRemaining: this.hitStopRemaining }; }
+  public getSnapshot(): GameFeelSnapshot {
+    return {
+      particles: this.particles,
+      ultimatePulses: this.ultimatePulses,
+      parcelShieldPulses: this.parcelShieldPulses,
+      flashingTargetIds: new Set(this.flashes.keys()),
+      hitStopRemaining: this.hitStopRemaining,
+      comicTexts: this.comicTexts,
+      comboStreak: this.comboStreak,
+    };
+  }
 
   private spawnImpact(x: number, y: number, count: number, color: string): void {
     for (let i = 0; i < count; i++) {

@@ -129,11 +129,23 @@ export class SpriteRenderer {
       if (facing === 'left') {
         ctx.translate(screenAnchor.x, screenAnchor.y);
         ctx.scale(-1, 1);
-        if (contrastOutline && stateName !== 'ko') { ctx.filter = 'brightness(0)'; ctx.globalAlpha = 0.55; drawFrame(-1, 0); drawFrame(1, 0); drawFrame(0, -1); drawFrame(0, 1); ctx.filter = 'none'; ctx.globalAlpha = 1; }
+        if (contrastOutline && stateName !== 'ko') {
+          ctx.save();
+          ctx.filter = 'brightness(0)';
+          ctx.globalAlpha = 0.45;
+          drawFrame(0, 1);
+          ctx.restore();
+        }
         drawFrame();
       } else {
         ctx.translate(screenAnchor.x, screenAnchor.y);
-        if (contrastOutline && stateName !== 'ko') { ctx.filter = 'brightness(0)'; ctx.globalAlpha = 0.55; drawFrame(-1, 0); drawFrame(1, 0); drawFrame(0, -1); drawFrame(0, 1); ctx.filter = 'none'; ctx.globalAlpha = 1; }
+        if (contrastOutline && stateName !== 'ko') {
+          ctx.save();
+          ctx.filter = 'brightness(0)';
+          ctx.globalAlpha = 0.45;
+          drawFrame(0, 1);
+          ctx.restore();
+        }
         drawFrame();
       }
 
@@ -217,7 +229,7 @@ export class SpriteRenderer {
       worldAnchorY,
       dog.facing,
       dogSet.manifest.scale * visualScale,
-      true
+      false
     );
     return res.rendered;
   }
@@ -249,7 +261,7 @@ export class SpriteRenderer {
       worldAnchorY,
       rival.facing,
       rivalSet.manifest.scale * visualScale,
-      true
+      false
     );
     return res.rendered;
   }
@@ -284,7 +296,7 @@ export class SpriteRenderer {
       worldAnchorY,
       thug.facing,
       thugSet.manifest.scale * visualScale,
-      true
+      false
     );
     return res.rendered;
   }
@@ -319,7 +331,7 @@ export class SpriteRenderer {
       worldAnchorY,
       boss.facing,
       bossSet.manifest.scale * visualScale,
-      true
+      false
     );
 
     if (res.rendered) {

@@ -258,6 +258,7 @@ export class Player extends Entity {
 
     // Dodge (L)
     if (input.isJustPressed('dodge') && this.dodgeCooldownTimer <= 0 && this.actionState !== 'DODGE') {
+      this.landingTimer = 0;
       this.startDodge();
       return;
     }
@@ -269,6 +270,7 @@ export class Player extends Entity {
       this.actionState !== 'DODGE' &&
       this.actionState !== 'ATTACK'
     ) {
+      this.landingTimer = 0;
       this.shootProjectile();
     }
 
@@ -278,14 +280,26 @@ export class Player extends Entity {
       this.momentum >= BALANCE.ULTIMATE_COST &&
       this.actionState !== 'DODGE'
     ) {
+      this.landingTimer = 0;
       this.startUltimate();
       return;
     }
 
     // Melee combo (J)
     if (input.isJustPressed('attack')) {
+      this.landingTimer = 0;
       if (this.actionState === 'ATTACK') {
-        // Buffer next combo step if in combo window
+        // If in RECOVERY of J1 or J2, cancel recovery immediately into next attack
+        if (this.attackPhase === 'RECOVERY') {
+          if (this.comboStep === 'J1') {
+            this.startMeleeCombo('J2');
+            return;
+          } else if (this.comboStep === 'J2') {
+            this.startMeleeCombo('J3');
+            return;
+          }
+        }
+        // Buffer next combo step if in startup/active window
         this.comboBuffer = true;
       } else if (this.actionState !== 'DODGE') {
         if (!this.isGrounded) {
@@ -500,6 +514,7 @@ export class Player extends Entity {
 
     const slipFactor = this.slipTimer > 0 ? 0.75 : 1.0;
     if (moveAxis !== 0) {
+      this.landingTimer = 0;
       this.facing = moveAxis > 0 ? 'right' : 'left';
       const targetVx = moveAxis * BALANCE.PLAYER_MOVE_SPEED;
       this.vx += (targetVx - this.vx) * Math.min(1, (BALANCE.PLAYER_ACCELERATION * slipFactor * dt) / BALANCE.PLAYER_MOVE_SPEED);

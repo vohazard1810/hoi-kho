@@ -400,6 +400,18 @@ export class Stage1Scene implements Scene {
 
     this.telemetry.update(dt);
 
+    // 1. Process Player Controls (buffered seamlessly even during impact hit-stop)
+    if (input.isJustPressed('attack')) this.telemetry.recordAction('J');
+    if (input.isJustPressed('projectile')) this.telemetry.recordAction('K');
+    if (input.isJustPressed('dodge')) this.telemetry.recordAction('L');
+    if (input.isJustPressed('ultimate')) this.telemetry.recordAction('Q');
+    this.player.handleInput(input);
+
+    let moveAxis = 0;
+    if (input.isDown('moveLeft')) moveAxis -= 1;
+    if (input.isDown('moveRight')) moveAxis += 1;
+    this.player.applyMovementInput(moveAxis, dt);
+
     // Hit-stop freezes gameplay simulation only. Visual timers and camera shake continue.
     const simulationFrozen = this.gameFeel.update(dt);
     this.camera.updateShake(dt);
@@ -416,18 +428,6 @@ export class Stage1Scene implements Scene {
       this.player.update(dt);
       return;
     }
-
-    // 1. Process Player Controls
-    if (input.isJustPressed('attack')) this.telemetry.recordAction('J');
-    if (input.isJustPressed('projectile')) this.telemetry.recordAction('K');
-    if (input.isJustPressed('dodge')) this.telemetry.recordAction('L');
-    if (input.isJustPressed('ultimate')) this.telemetry.recordAction('Q');
-    this.player.handleInput(input);
-
-    let moveAxis = 0;
-    if (input.isDown('moveLeft')) moveAxis -= 1;
-    if (input.isDown('moveRight')) moveAxis += 1;
-    this.player.applyMovementInput(moveAxis, dt);
 
     // 2. Resolve Player Physics
     const prevPlayerY = this.player.y;
