@@ -133,6 +133,9 @@ export class SpriteRenderer {
           ctx.save();
           ctx.filter = 'brightness(0)';
           ctx.globalAlpha = 0.45;
+          drawFrame(-1, 0);
+          drawFrame(1, 0);
+          drawFrame(0, -1);
           drawFrame(0, 1);
           ctx.restore();
         }
@@ -143,6 +146,9 @@ export class SpriteRenderer {
           ctx.save();
           ctx.filter = 'brightness(0)';
           ctx.globalAlpha = 0.45;
+          drawFrame(-1, 0);
+          drawFrame(1, 0);
+          drawFrame(0, -1);
           drawFrame(0, 1);
           ctx.restore();
         }

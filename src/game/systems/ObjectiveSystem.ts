@@ -160,4 +160,34 @@ export class ObjectiveSystem {
 
     return this.deliveryResult;
   }
+
+  public failDelivery(currentHp: number, reason: string = 'PARCEL_DESTROYED'): DeliveryResultData {
+    if (this.state === 'DELIVERED' && this.deliveryResult) {
+      return this.deliveryResult;
+    }
+
+    this.state = 'DELIVERED';
+    this.playerHp = currentHp;
+
+    const penaltyDebt = 2000000; // 2,000,000 VND penalty added to debt
+    const econ = EconomySystem.getInstance().addPenaltyDebt(penaltyDebt);
+
+    this.deliveryResult = {
+      success: false,
+      remainingHp: Math.max(0, this.playerHp),
+      maxHp: this.playerMaxHp,
+      parcelCondition: 0,
+      baseReward: 0,
+      bonusReward: 0,
+      totalReward: 0,
+      reward: 0,
+      isDamaged: true,
+      debtPayment: -penaltyDebt,
+      remainingDebt: econ.remainingDebt,
+      lifetimeEarnings: econ.lifetimeEarnings,
+      deliveriesCompleted: econ.deliveriesCompleted,
+    };
+
+    return this.deliveryResult;
+  }
 }

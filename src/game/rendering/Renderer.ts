@@ -28,7 +28,7 @@ import { TrainingTarget } from '../systems/TrainingTarget';
 import { ProductionVisualsV19 } from './ProductionVisualsV19';
 import { EconomySnapshot } from '../systems/EconomySystem';
 
-const STAGE_HUMAN_SCALE = 1.48;
+const STAGE_HUMAN_SCALE = 1.48; // Baseline: const STAGE_HUMAN_SCALE = 1.25
 const STAGE_DOG_SCALE = 1.35;
 const STAGE_BOSS_SCALE = 1.28;
 
@@ -38,6 +38,15 @@ export interface HubProgressOverlay {
   jobBoardOpen: boolean;
   selectedJobIndex: number;
   jobBoardNotice: string | null;
+}
+
+export interface StageHazardOverlay {
+  droppedParcel: { x: number; y: number } | null;
+  motorbike: { active: boolean; warning: boolean; x: number; y: number; facing: 'left' | 'right' } | null;
+  dogClamp: { active: boolean; mashRemaining: number } | null;
+  waterSplash: { x: number; warning: boolean; active: boolean } | null;
+  phoneAlert: { title: string; text: string; timer: number; icon: string } | null;
+  stageTimer: number;
 }
 
 export class Renderer {
@@ -1178,6 +1187,283 @@ export class Renderer {
     this.ctx.restore();
   }
 
+  private renderStageHazards(camera: Camera, player: Player, hazards: StageHazardOverlay): void {
+    const ctx = this.ctx;
+
+    // 1. Water Splash Hazard (from balcony above)
+    if (hazards.waterSplash) {
+      const splash = hazards.waterSplash;
+      const screenPos = camera.worldToScreen(splash.x, 575);
+      if (splash.warning) {
+        ctx.save();
+        const pulse = 0.5 + Math.sin(performance.now() / 120) * 0.3;
+        ctx.fillStyle = `rgba(56, 189, 248, ${pulse * 0.35})`;
+        ctx.strokeStyle = `rgba(186, 230, 253, ${pulse + 0.3})`;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.ellipse(screenPos.x, screenPos.y, 45, 12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#bae6fd';
+        ctx.font = 'bold 11px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚠️ COI CHỪNG NƯỚC TẠT! 💦', screenPos.x, screenPos.y - 18);
+        ctx.restore();
+      } else if (splash.active) {
+        ctx.save();
+        // Pouring water stream from top
+        ctx.strokeStyle = 'rgba(125, 211, 252, 0.75)';
+        ctx.lineWidth = 3;
+        for (let i = -3; i <= 3; i++) {
+          const offX = i * 10;
+          ctx.beginPath();
+          ctx.moveTo(screenPos.x + offX, screenPos.y - 260);
+          ctx.lineTo(screenPos.x + offX * 1.3, screenPos.y);
+          ctx.stroke();
+        }
+        // Splash impact rings
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(screenPos.x, screenPos.y, 55, 15, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = 'italic 900 13px system-ui';
+        ctx.fillStyle = '#e0f2fe';
+        ctx.textAlign = 'center';
+        ctx.fillText('XÈO! NƯỚC RỬA BÁT! 🧼💦', screenPos.x, screenPos.y - 30);
+        ctx.restore();
+      }
+    }
+
+    // 2. Motorbike Rush Hazard (Xe Ninja Lead)
+    if (hazards.motorbike) {
+      const mb = hazards.motorbike;
+      if (mb.warning) {
+        ctx.save();
+        const pulse = 0.5 + Math.sin(performance.now() / 90) * 0.4;
+        const bannerW = 460;
+        const bannerH = 34;
+        const bannerX = 640 - bannerW / 2;
+        const bannerY = 150;
+        ctx.fillStyle = `rgba(220, 38, 38, ${0.85 + pulse * 0.15})`;
+        ctx.fillRect(bannerX, bannerY, bannerW, bannerH);
+        ctx.strokeStyle = '#fef08a';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(bannerX, bannerY, bannerW, bannerH);
+        ctx.font = '900 14px system-ui';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚠️ BÍP BÍP! XE NINJA LEAD SẮP LAO QUA HẺM! (NHẢY LÊN ĐỂ NÉ!) 🛵', 640, bannerY + 22);
+        ctx.restore();
+      } else if (mb.active) {
+        const bikeScreen = camera.worldToScreen(mb.x, mb.y);
+        ctx.save();
+        // Headlight beam casting forward
+        const beamDir = mb.facing === 'right' ? 1 : -1;
+        const beamGrad = ctx.createRadialGradient(
+          bikeScreen.x + beamDir * 20, bikeScreen.y, 10,
+          bikeScreen.x + beamDir * 180, bikeScreen.y, 140
+        );
+        beamGrad.addColorStop(0, 'rgba(254, 240, 138, 0.6)');
+        beamGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+        ctx.fillStyle = beamGrad;
+        ctx.beginPath();
+        ctx.moveTo(bikeScreen.x + beamDir * 20, bikeScreen.y - 10);
+        ctx.lineTo(bikeScreen.x + beamDir * 220, bikeScreen.y - 45);
+        ctx.lineTo(bikeScreen.x + beamDir * 220, bikeScreen.y + 45);
+        ctx.closePath();
+        ctx.fill();
+
+        // Lead Scooter Body
+        ctx.translate(bikeScreen.x, bikeScreen.y);
+        if (mb.facing === 'left') ctx.scale(-1, 1);
+
+        // Scooter frame & wheels
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(-24, 20, 14, 0, Math.PI * 2);
+        ctx.arc(28, 20, 14, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Lead chassis
+        ctx.fillStyle = '#f43f5e';
+        ctx.beginPath();
+        ctx.moveTo(-28, 14);
+        ctx.lineTo(16, 14);
+        ctx.lineTo(24, -12);
+        ctx.lineTo(12, -26);
+        ctx.lineTo(-12, -18);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#fda4af';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Ninja rider coat
+        ctx.fillStyle = '#fb923c';
+        ctx.beginPath();
+        ctx.ellipse(0, -32, 14, 18, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        // Helmet with visor
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(6, -50, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(8, -52, 9, 5);
+
+        // Speed lines and sound tag
+        ctx.restore();
+        ctx.save();
+        ctx.font = 'italic 900 16px system-ui';
+        ctx.fillStyle = '#fde047';
+        ctx.textAlign = 'center';
+        ctx.fillText('VROOOOOOM!! 🛵💨', bikeScreen.x, bikeScreen.y - 65);
+        ctx.restore();
+      }
+    }
+
+    // 3. Dropped Physical Parcel
+    if (hazards.droppedParcel) {
+      const pScreen = camera.worldToScreen(hazards.droppedParcel.x, hazards.droppedParcel.y);
+      ctx.save();
+      const bounce = Math.sin(performance.now() / 160) * 3;
+      // Pulsing floor indicator ring
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.ellipse(pScreen.x, pScreen.y + 12, 34, 10, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Cardboard parcel box
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(pScreen.x - 16, pScreen.y - 14 + bounce, 32, 26);
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(pScreen.x - 16, pScreen.y - 14 + bounce, 32, 26);
+
+      // Yellow tape band across parcel
+      ctx.fillStyle = '#fde047';
+      ctx.fillRect(pScreen.x - 16, pScreen.y - 4 + bounce, 32, 6);
+      ctx.fillRect(pScreen.x - 3, pScreen.y - 14 + bounce, 6, 26);
+
+      // SXP stamp
+      ctx.fillStyle = '#1e3a8a';
+      ctx.font = '900 9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('SXP', pScreen.x, pScreen.y + bounce);
+
+      // Callout prompt tag
+      const tagPulse = 0.8 + Math.sin(performance.now() / 110) * 0.2;
+      ctx.fillStyle = `rgba(220, 38, 38, ${tagPulse})`;
+      ctx.fillRect(pScreen.x - 58, pScreen.y - 40 + bounce, 116, 20);
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(pScreen.x - 58, pScreen.y - 40 + bounce, 116, 20);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px system-ui';
+      ctx.fillText('📦 [ E ] NHẶT HÀNG!', pScreen.x, pScreen.y - 26 + bounce);
+      ctx.restore();
+    }
+
+    // 4. Dog Clamp QTE (immobilizing player)
+    if (hazards.dogClamp && hazards.dogClamp.active) {
+      const plScreen = camera.worldToScreen(player.x + player.width / 2, player.y - 25);
+      ctx.save();
+      const shakeX = (Math.random() - 0.5) * 4;
+      const shakeY = (Math.random() - 0.5) * 4;
+
+      // QTE Banner
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+      ctx.fillRect(plScreen.x - 100 + shakeX, plScreen.y - 50 + shakeY, 200, 44);
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(plScreen.x - 100 + shakeX, plScreen.y - 50 + shakeY, 200, 44);
+
+      ctx.fillStyle = '#fee2e2';
+      ctx.font = 'bold 11px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('CHÓ CẮN CHÂN! NHẤN [ J ] LIÊN TỤC!', plScreen.x + shakeX, plScreen.y - 32 + shakeY);
+
+      // Mash button icon & counter
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(plScreen.x - 30 + shakeX, plScreen.y - 25 + shakeY, 60, 16);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 12px monospace';
+      ctx.fillText(`⚡ ĐÁ: ${hazards.dogClamp.mashRemaining} ⚡`, plScreen.x + shakeX, plScreen.y - 13 + shakeY);
+
+      ctx.restore();
+    }
+  }
+
+  private renderStageHazardHud(hazards: StageHazardOverlay): void {
+    const ctx = this.ctx;
+
+    // 1. Delivery Countdown Clock
+    if (hazards.stageTimer > 0) {
+      ctx.save();
+      const totalSec = Math.max(0, Math.ceil(hazards.stageTimer));
+      const min = Math.floor(totalSec / 60);
+      const sec = totalSec % 60;
+      const timeStr = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+      const isUrgent = totalSec <= 30;
+
+      const badgeX = 520;
+      const badgeY = 22;
+      const badgeW = 120;
+      const badgeH = 26;
+
+      ctx.fillStyle = isUrgent ? 'rgba(185, 28, 28, 0.92)' : 'rgba(15, 23, 42, 0.88)';
+      ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
+      ctx.strokeStyle = isUrgent ? '#fca5a5' : '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(badgeX, badgeY, badgeW, badgeH);
+
+      ctx.font = 'bold 12px monospace';
+      ctx.fillStyle = isUrgent ? '#ffffff' : '#e0f2fe';
+      ctx.textAlign = 'center';
+      ctx.fillText(`⏱️ ${timeStr}`, badgeX + badgeW / 2, badgeY + 18);
+      ctx.restore();
+    }
+
+    // 2. Smartphone Notification Distress Bubble (Bottom-Right)
+    if (hazards.phoneAlert && hazards.phoneAlert.timer > 0) {
+      const alert = hazards.phoneAlert;
+      ctx.save();
+      const notifW = 340;
+      const notifH = 68;
+      const notifX = 1280 - notifW - 20;
+      const notifY = 620;
+
+      ctx.globalAlpha = Math.min(1, alert.timer * 1.5);
+
+      // Glassmorphic panel
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+      ctx.fillRect(notifX, notifY, notifW, notifH);
+      ctx.strokeStyle = alert.title.includes('F89') ? '#ef4444' : '#f59e0b';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(notifX, notifY, notifW, notifH);
+
+      // App Header with Icon
+      ctx.fillStyle = alert.title.includes('F89') ? '#fca5a5' : '#fde68a';
+      ctx.font = 'bold 12px system-ui';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${alert.icon} ${alert.title}`, notifX + 12, notifY + 22);
+
+      // Body text
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '11px system-ui';
+      ctx.fillText(alert.text, notifX + 12, notifY + 44, notifW - 24);
+
+      ctx.restore();
+    }
+  }
+
   public renderStage1Scene(
     camera: Camera,
     player: Player,
@@ -1203,7 +1489,8 @@ export class Renderer {
     gameFeel: GameFeelSnapshot,
     upgradeSnapshot: UpgradeSnapshot,
     slowedTargetIds: ReadonlySet<string>,
-    cueOpacities?: Record<string, number>
+    cueOpacities?: Record<string, number>,
+    stageHazards?: StageHazardOverlay
   ): void {
     this.clear();
 
@@ -1466,6 +1753,10 @@ export class Renderer {
     }
     this.ctx.restore();
 
+    if (stageHazards) {
+      this.renderStageHazards(camera, player, stageHazards);
+    }
+
     // Sleek Arcade Combo Counter (Top Right, docked below Debt display)
     if (gameFeel.comboStreak >= 2) {
       this.ctx.save();
@@ -1532,6 +1823,9 @@ export class Renderer {
     EquipmentVisualRenderer.renderHud(this.ctx, upgradeSnapshot, player);
     if (!activeBoss || !activeBoss.isAlive || activeBoss.state === 'KO') {
       this.v19Visuals.renderParcel(this.ctx, parcelCondition, 882, 22, 48, 48);
+    }
+    if (stageHazards) {
+      this.renderStageHazardHud(stageHazards);
     }
 
     // 8. Debug Overlay (only if DEV_MODE = true)

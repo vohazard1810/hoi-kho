@@ -1478,7 +1478,7 @@ export class PlaceholderRenderer {
       ctx.fillStyle = '#fef08a';
       ctx.font = '900 11px monospace';
       ctx.textAlign = 'right';
-      ctx.fillText('⚡ Q READY!', barX + barW - 6, momY + 13);
+      ctx.fillText('Q READY!', barX + barW - 6, momY + 13);
       ctx.shadowBlur = 0;
     } else {
       ctx.fillStyle = '#ffffff';

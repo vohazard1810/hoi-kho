@@ -11,7 +11,7 @@ import { Player } from '../entities/Player';
 import { Projectile } from '../entities/Projectile';
 import { Rival } from '../entities/Rival';
 import { Thug } from '../entities/Thug';
-import { Renderer } from '../rendering/Renderer';
+import { Renderer, StageHazardOverlay } from '../rendering/Renderer';
 import { CollisionSystem } from '../systems/CollisionSystem';
 import { CombatSystem } from '../systems/CombatSystem';
 import { InteractionSystem } from '../systems/InteractionSystem';
@@ -25,6 +25,7 @@ import { UpgradeSystem } from '../systems/UpgradeSystem';
 import { AudioManager, meleeSwingSfx, pickupSfx } from '../audio/AudioManager';
 import { DialogueSystem, DialogueLine } from '../systems/DialogueSystem';
 import { calculateParcelDamage } from '../systems/ParcelDamagePolicy';
+import { Hitbox } from '../systems/HitboxSystem';
 import { RunTelemetry } from '../systems/RunTelemetry';
 
 export type ZoneEncounterState = 'NOT_STARTED' | 'ACTIVE' | 'CLEARED';
@@ -86,11 +87,44 @@ export class Stage1Scene implements Scene {
   private telemetry = RunTelemetry.getInstance();
   private koRecorded = false;
 
+  // Stage 1 Physical Harshness & Alley Friction
+  private isParcelDropped = false;
+  private droppedParcel: { x: number; y: number; vx: number; vy: number; gnawTimer: number } | null = null;
+  private motorbike = { active: false, warning: false, timer: 0, x: 0, y: 550, vx: 0, facing: 'left' as 'left' | 'right', triggeredZones: new Set<string>() };
+  private dogClamp = { active: false, dogId: null as string | null, mashRemaining: 0 };
+  private waterSplash = { x: 1100, warning: false, active: false, timer: 0 };
+  private phoneAlert: { title: string; text: string; timer: number; icon: string } | null = null;
+  private stageTimer = 160;
+  private triggeredPhoneAlerts = new Set<string>();
+
   // Interaction prompt & progress
   private nearbyPrompt: string | null = null;
   private currentZoneId: string = 'A';
   private currentZoneName: string = 'Hẻm Đầu Cầu';
   private currentEncounterName: string = 'Chó Dữ Hẻm Cầu';
+
+  private showPhoneAlert(title: string, text: string, icon: string): void {
+    this.phoneAlert = {
+      title,
+      text,
+      icon,
+      timer: 4.5,
+    };
+  }
+
+  private dropParcel(x: number, y: number, vx: number, vy: number): void {
+    this.isParcelDropped = true;
+    this.droppedParcel = {
+      x,
+      y,
+      vx,
+      vy,
+      gnawTimer: 1.0,
+    };
+    this.audio.play('parcel_hit');
+    this.gameFeel.triggerComicText('RƠI HÀNG! [E] ĐỂ NHẶT', x, y - 25, '#f59e0b');
+    this.showPhoneAlert('SXP CẢNH BÁO', 'KIỆN HÀNG ĐÃ BỊ RƠI! Nhặt lại ngay trước khi bị cắn nát hoặc cướp mất!', '📦');
+  }
 
   constructor(sceneManager: SceneManager) {
     this.sceneManager = sceneManager;
@@ -221,6 +255,16 @@ export class Stage1Scene implements Scene {
     this.gameFeel.reset();
     this.enemyStatus.reset();
 
+    // Reset hazard states
+    this.isParcelDropped = false;
+    this.droppedParcel = null;
+    this.motorbike = { active: false, warning: false, timer: 0, x: 0, y: 550, vx: 0, facing: 'left', triggeredZones: new Set() };
+    this.dogClamp = { active: false, dogId: null, mashRemaining: 0 };
+    this.waterSplash = { x: 1100, warning: false, active: false, timer: 0 };
+    this.phoneAlert = null;
+    this.stageTimer = 160;
+    this.triggeredPhoneAlerts.clear();
+
     // Exploration drops on elevated platforms reward vertical navigation & Air Drop Kick
     this.lootSystem.spawnDrop('PARTS', 985, 432);
     this.lootSystem.spawnDrop('PARCEL_REPAIR', 1760, 412);
@@ -335,6 +379,13 @@ export class Stage1Scene implements Scene {
     this.dialogue.reset();
     this.hazardCooldowns.clear();
     this.perfectDodgeHitboxIds.clear();
+    this.isParcelDropped = false;
+    this.droppedParcel = null;
+    this.dogClamp = { active: false, dogId: null, mashRemaining: 0 };
+    this.motorbike.active = false;
+    this.motorbike.warning = false;
+    this.waterSplash.warning = false;
+    this.waterSplash.active = false;
   }
 
   public getCheckpoint(): EncounterCheckpoint | null {
@@ -362,6 +413,13 @@ export class Stage1Scene implements Scene {
   private onDeliverToCustomer(): void {
     // Delivery requires Zone E to be legitimately CLEARED
     if (this.zoneStates['E'] !== 'CLEARED') {
+      return;
+    }
+
+    if (this.isParcelDropped) {
+      this.dialogue.start([
+        { speaker: 'CHÚ TƯ', text: 'Ủa thùng hàng đâu rồi con?! Làm rớt dọc đường rồi à? Mau quay lại tìm nhặt [ E ] về đây!', tone: 'warning' },
+      ]);
       return;
     }
 
@@ -417,6 +475,67 @@ export class Stage1Scene implements Scene {
 
   public update(dt: number, input: Input): void {
     const objective = ObjectiveSystem.getInstance();
+
+    // 0. Delivery Failure checks: Parcel Destroyed (0%) or Time Limit Expired
+    if (objective.parcelCondition <= 0) {
+      objective.failDelivery(this.player.hp, 'PARCEL_DESTROYED');
+      this.sceneManager.switchScene('RESULT');
+      return;
+    }
+    if (objective.state === 'IN_DELIVERY') {
+      this.stageTimer = Math.max(0, this.stageTimer - dt);
+      if (this.stageTimer <= 0) {
+        objective.failDelivery(this.player.hp, 'TIME_EXPIRED');
+        this.sceneManager.switchScene('RESULT');
+        return;
+      }
+    }
+
+    // Smartphone SMS alerts
+    if (this.phoneAlert) {
+      this.phoneAlert.timer -= dt;
+      if (this.phoneAlert.timer <= 0) this.phoneAlert = null;
+    }
+    if (!this.triggeredPhoneAlerts.has('f89_intro') && this.stageTimer <= 155) {
+      this.triggeredPhoneAlerts.add('f89_intro');
+      this.showPhoneAlert('APP NỢ F89', 'LÃI SUẤT HÔM NAY: 15%. Quá hạn phạt 2.000.000đ/ngày. Liệu mà giao đúng giờ!', '🔴');
+    } else if (!this.triggeredPhoneAlerts.has('zone_c_rival') && (this.currentZoneId === 'C' || this.player.x > 1500)) {
+      this.triggeredPhoneAlerts.add('zone_c_rival');
+      this.showPhoneAlert('SXP ĐIỀU PHỐI', 'Cảnh báo: Có shipper đối thủ lượn lờ bãi xe định cướp đơn!', '📦');
+    } else if (!this.triggeredPhoneAlerts.has('chutu_rush') && this.stageTimer <= 90) {
+      this.triggeredPhoneAlerts.add('chutu_rush');
+      this.showPhoneAlert('KHÁCH: CHÚ TƯ', 'Giao tới đâu rồi con? Chú chờ lâu lắm rồi đó, bể đồ là không trả tiền đâu!', '👨');
+    } else if (!this.triggeredPhoneAlerts.has('f89_urgent') && this.stageTimer <= 45) {
+      this.triggeredPhoneAlerts.add('f89_urgent');
+      this.showPhoneAlert('APP NỢ F89', 'CẢNH BÁO: Hạn chót sắp hết! Phí phạt 2 triệu sẽ cộng dồn nợ ngay lập tức!', '⚠️');
+    }
+
+    // Dog Clamp QTE
+    if (this.dogClamp.active) {
+      const clampedDog = this.dogs.find((d) => d.id === this.dogClamp.dogId);
+      if (!clampedDog || !clampedDog.isAlive || clampedDog.state === 'KO') {
+        this.dogClamp.active = false;
+        this.nearbyPrompt = null;
+      } else {
+        this.player.vx = 0;
+        clampedDog.x = this.player.x + (this.player.facing === 'right' ? 18 : -18);
+        clampedDog.y = this.player.y + 12;
+        this.nearbyPrompt = `[ J ] NHẤN LIÊN TỤC ĐỂ ĐÁ CHÓ! (${this.dogClamp.mashRemaining})`;
+        if (input.isJustPressed('attack')) {
+          this.dogClamp.mashRemaining--;
+          this.audio.play('hit_light');
+          this.gameFeel.triggerMeleeHit('J1', [clampedDog.id], this.player.x, this.player.y);
+          if (this.dogClamp.mashRemaining <= 0) {
+            this.dogClamp.active = false;
+            this.nearbyPrompt = null;
+            clampedDog.takeDamage(30, this.player.facing === 'right' ? 240 : -240, 150, this.player.x);
+            this.audio.play('hit_heavy');
+            this.audio.play('dog_bark');
+            this.gameFeel.triggerComicText('ĐÁ VĂNG CHÓ! 💥', this.player.x, this.player.y - 25, '#fb923c');
+          }
+        }
+      }
+    }
 
     if (this.dialogue.isActive()) {
       if (
@@ -561,6 +680,129 @@ export class Stage1Scene implements Scene {
     }
 
     this.player.update(dt);
+
+    // 3b. Physical Dropped Parcel Mechanics
+    if (this.isParcelDropped && this.droppedParcel) {
+      const p = this.droppedParcel;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 650 * dt;
+      p.vx *= 0.94;
+      if (p.y >= 580) {
+        p.y = 580;
+        p.vy = 0;
+      }
+
+      const dist = Math.hypot(p.x - (this.player.x + this.player.width / 2), p.y - (this.player.y + this.player.height / 2));
+      if (dist < 60) {
+        this.nearbyPrompt = '[ E ] Nhặt lại kiện hàng!';
+        if (input.isJustPressed('interact')) {
+          this.isParcelDropped = false;
+          this.droppedParcel = null;
+          this.audio.play('parcel_repair');
+          this.gameFeel.triggerParcelShield(this.player.x + this.player.width / 2, this.player.y + this.player.height / 2);
+          this.nearbyPrompt = null;
+          this.showPhoneAlert('SXP GIAO HÀNG', 'Đã bảo quản lại kiện hàng an toàn trên lưng! Tiếp tục giao!', '📦');
+        }
+      }
+
+      if (this.isParcelDropped && this.droppedParcel) {
+        p.gnawTimer -= dt;
+        for (const dog of this.dogs) {
+          if (!dog.isAlive) continue;
+          const dogDist = Math.hypot(dog.x + dog.width / 2 - p.x, dog.y + dog.height / 2 - p.y);
+          if (dogDist < 55 && p.gnawTimer <= 0) {
+            objective.damageParcel(4);
+            p.gnawTimer = 1.2;
+            this.audio.play('parcel_hit');
+            this.audio.play('dog_bark');
+            this.gameFeel.triggerComicText('CHÓ NGOẠM HÀNG! -4%', p.x, p.y - 20, '#ef4444');
+            break;
+          }
+        }
+      }
+    }
+
+    // 3c. Dynamic Motorbike Rush (Xe Ninja Lead)
+    if (!this.motorbike.triggeredZones.has('B') && this.player.x >= 950 && this.player.x <= 1300) {
+      this.motorbike.triggeredZones.add('B');
+      this.motorbike.warning = true;
+      this.motorbike.timer = 1.8;
+      this.motorbike.x = this.player.x + 380;
+      this.motorbike.facing = 'left';
+      this.motorbike.vx = -620;
+      this.audio.play('boss_warning');
+    }
+    if (!this.motorbike.triggeredZones.has('D') && this.player.x >= 2250 && this.player.x <= 2600) {
+      this.motorbike.triggeredZones.add('D');
+      this.motorbike.warning = true;
+      this.motorbike.timer = 1.8;
+      this.motorbike.x = this.player.x + 420;
+      this.motorbike.facing = 'left';
+      this.motorbike.vx = -650;
+      this.audio.play('boss_warning');
+    }
+
+    if (this.motorbike.warning) {
+      this.motorbike.timer -= dt;
+      if (this.motorbike.timer <= 0) {
+        this.motorbike.warning = false;
+        this.motorbike.active = true;
+        this.audio.play('hit_heavy');
+      }
+    } else if (this.motorbike.active) {
+      this.motorbike.x += this.motorbike.vx * dt;
+      const pCenterX = this.player.x + this.player.width / 2;
+      const mbDist = Math.abs(pCenterX - this.motorbike.x);
+      if (mbDist < 48 && this.player.isGrounded && this.player.actionState !== 'DODGE') {
+        this.player.takeDamage(18, -320, 220, this.motorbike.x);
+        this.audio.play('hit_heavy');
+        this.gameFeel.triggerPlayerDamaged(this.player.x, this.player.y);
+        this.gameFeel.triggerComicText('ĐÂM XE LEAD! -18 HP', this.player.x, this.player.y - 30, '#ef4444');
+        if (!this.isParcelDropped) {
+          this.dropParcel(this.player.x, this.player.y - 10, -180, -220);
+        }
+      }
+
+      const allEnemies = [...this.dogs, ...this.rivals, ...this.thugs, ...this.bossDogs];
+      for (const e of allEnemies) {
+        if (!e.isAlive) continue;
+        if (Math.abs(e.x + e.width / 2 - this.motorbike.x) < 40) {
+          e.takeDamage(30, -280, 180, this.motorbike.x);
+        }
+      }
+
+      if (this.motorbike.x < this.camera.x - 200 || this.motorbike.x > this.camera.x + 1480) {
+        this.motorbike.active = false;
+      }
+    }
+
+    // 3d. Dynamic Balcony Water Splash
+    this.waterSplash.timer -= dt;
+    if (this.waterSplash.timer <= 0) {
+      if (!this.waterSplash.warning && !this.waterSplash.active) {
+        if (this.player.x > 850 && this.player.x < 2200) {
+          this.waterSplash.warning = true;
+          this.waterSplash.timer = 1.4;
+          this.waterSplash.x = this.player.x + 90;
+        } else {
+          this.waterSplash.timer = 5;
+        }
+      } else if (this.waterSplash.warning) {
+        this.waterSplash.warning = false;
+        this.waterSplash.active = true;
+        this.waterSplash.timer = 0.8;
+        this.audio.play('land');
+      } else if (this.waterSplash.active) {
+        if (Math.abs(this.player.x + this.player.width / 2 - this.waterSplash.x) < 48 && this.player.isGrounded) {
+          objective.damageParcel(6);
+          this.audio.play('parcel_hit');
+          this.gameFeel.triggerComicText('NƯỚC TẠT ƯỚT HÀNG! -6%', this.player.x, this.player.y - 25, '#38bdf8');
+        }
+        this.waterSplash.active = false;
+        this.waterSplash.timer = 12;
+      }
+    }
 
     // 4. Update Zone Encounter States & Spawner Trigger
     this.updateEncounterStates();
@@ -849,6 +1091,12 @@ export class Stage1Scene implements Scene {
             this.player.x + this.player.width / 2,
             this.player.y + this.player.height / 2
           );
+
+          // Heavy hit causes physical parcel drop!
+          if (!this.isParcelDropped && (dmg >= 12 || Math.abs(kbX) >= 160)) {
+            const dropDir = srcX < this.player.x ? 1 : -1;
+            this.dropParcel(this.player.x, this.player.y + 10, dropDir * 140, -180);
+          }
         }
         return damaged;
       },
@@ -885,7 +1133,13 @@ export class Stage1Scene implements Scene {
       const dogHitbox = dog.getActiveHitbox();
       if (dogHitbox) {
         if (!tryPerfectDodge(dogHitbox)) {
-          this.combatSystem.evaluateHitbox(dogHitbox, [playerTarget]);
+          const hits = this.combatSystem.evaluateHitbox(dogHitbox, [playerTarget]);
+          if (hits.length > 0 && !this.dogClamp.active && dog.isAlive && Math.random() < 0.35) {
+            this.dogClamp.active = true;
+            this.dogClamp.dogId = dog.id;
+            this.dogClamp.mashRemaining = 3;
+            this.gameFeel.triggerComicText('CHÓ CẮN CHÂN!', this.player.x, this.player.y - 20, '#ef4444');
+          }
         }
       }
     }
@@ -929,7 +1183,9 @@ export class Stage1Scene implements Scene {
     // 12. Interaction Check with Customer Chú Tư
     const nearby = InteractionSystem.getNearbyInteractable(this.player.getRect(), [this.customer]);
     if (nearby) {
-      if (this.zoneStates['E'] === 'CLEARED') {
+      if (this.isParcelDropped) {
+        this.nearbyPrompt = 'Mất kiện hàng rồi! Hãy quay lại tìm nhặt [ E ]';
+      } else if (this.zoneStates['E'] === 'CLEARED') {
         this.nearbyPrompt = nearby.promptText;
         if (input.isJustPressed('interact')) {
           nearby.onInteract();
@@ -937,7 +1193,7 @@ export class Stage1Scene implements Scene {
       } else {
         this.nearbyPrompt = 'Cần đánh bại Chó Đại Ca trước khi giao!';
       }
-    } else {
+    } else if (!this.nearbyPrompt?.includes('Nhặt lại') && !this.nearbyPrompt?.includes('ĐÁ CHÓ') && !this.nearbyPrompt?.includes('SPACE')) {
       this.nearbyPrompt = null;
     }
 
@@ -1097,6 +1353,25 @@ export class Stage1Scene implements Scene {
       }
     }
 
+    const stageHazards: StageHazardOverlay = {
+      droppedParcel: this.isParcelDropped && this.droppedParcel ? { x: this.droppedParcel.x, y: this.droppedParcel.y } : null,
+      motorbike: (this.motorbike.active || this.motorbike.warning) ? {
+        active: this.motorbike.active,
+        warning: this.motorbike.warning,
+        x: this.motorbike.x,
+        y: this.motorbike.y,
+        facing: this.motorbike.facing,
+      } : null,
+      dogClamp: this.dogClamp.active ? { active: true, mashRemaining: this.dogClamp.mashRemaining } : null,
+      waterSplash: (this.waterSplash.warning || this.waterSplash.active) ? {
+        x: this.waterSplash.x,
+        warning: this.waterSplash.warning,
+        active: this.waterSplash.active,
+      } : null,
+      phoneAlert: this.phoneAlert,
+      stageTimer: this.stageTimer,
+    };
+
     renderer.renderStage1Scene(
       this.camera,
       this.player,
@@ -1122,7 +1397,8 @@ export class Stage1Scene implements Scene {
       this.gameFeel.getSnapshot(),
       UpgradeSystem.getInstance().getSnapshot(),
       this.enemyStatus.getSlowedTargetIds(),
-      cueOpacities
+      cueOpacities,
+      stageHazards
     );
     renderer.renderDialogueOverlay(this.dialogue.getSnapshot());
   }

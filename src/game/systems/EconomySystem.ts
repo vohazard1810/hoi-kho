@@ -36,6 +36,14 @@ export class EconomySystem {
     return this.getSnapshot();
   }
 
+  public addPenaltyDebt(amount: number): EconomySnapshot {
+    const penalty = Number.isFinite(amount) ? Math.max(0, Math.round(amount)) : 0;
+    this.remainingDebt += penalty;
+    this.lastPayment = -penalty;
+    this.persist();
+    return this.getSnapshot();
+  }
+
   public getSnapshot(): EconomySnapshot {
     return {
       initialDebt: BALANCE.INITIAL_DEBT_VND,

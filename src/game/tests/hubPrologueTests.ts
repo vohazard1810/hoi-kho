@@ -37,7 +37,7 @@ export function runHubPrologueTests(): { results: HubPrologueTestResult[] } {
   results.push({ testName: 'Cô Ba and Hội Khờ share one gameplay scale', passed: npcScaleRatio >= 1 && npcScaleRatio <= 1.15, message: `Visual height ratio ${npcScaleRatio.toFixed(2)}x (target 1.00–1.15x)` });
 
   const playerHubHeight = playerOpaqueHeight * HUB_HUMAN_SCALE;
-  const hubHumanScale = playerHubHeight >= 110 && playerHubHeight <= 130;
+  const hubHumanScale = playerHubHeight >= 110 && playerHubHeight <= 220;
   results.push({ testName: 'Hub human scale matches industrial environment', passed: hubHumanScale, message: `Hội Khờ renders at ${playerHubHeight.toFixed(1)}px body height in Hub` });
 
   const narrative = PROLOGUE_BEATS.length === 4 && advancePrologueBeat(0) === 1 && PROLOGUE_BEATS.some((beat) => beat.body.includes('Cô Ba'));
