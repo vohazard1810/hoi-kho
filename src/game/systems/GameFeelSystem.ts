@@ -72,9 +72,8 @@ export class GameFeelSystem {
   /** Activation feedback is visible even when the ultimate does not hit a target. */
   public triggerUltimateActivation(x: number, y: number): void {
     this.ultimatePulses.push({ x, y, life: 0.65, maxLife: 0.65, maxRadius: 260 });
-    this.shakeRequest = { intensity: 12, duration: 0.35 };
-    this.spawnImpact(x, y, 48, '#F59E0B');
-    this.spawnImpact(x, y, 24, '#FBBF24');
+    this.shakeRequest = { intensity: 3.5, duration: 0.35 };
+    this.spawnImpact(x, y, 18, '#FBBF24');
     this.addComicText('⚡ HỎA TỐC GIAO HÀNG! ⚡', x, y - 48, '#FBBF24', 28);
   }
 
@@ -88,9 +87,9 @@ export class GameFeelSystem {
     if (combo === 'ULTIMATE') this.audio?.duckMusic?.(-4, 230);
     const profile = combo === 'ULTIMATE'
       ? { stop: 0.12, shake: 13, duration: 0.28, particles: 32 }
-      : combo === 'J3' ? { stop: 0.08, shake: 6, duration: 0.18, particles: 14 }
+      : combo === 'J3' ? { stop: 0.11, shake: 5, duration: 0.18, particles: 14 }
       : combo === 'J2' ? { stop: 0.05, shake: 3.5, duration: 0.12, particles: 9 }
-      : { stop: 0.04, shake: 2.2, duration: 0.1, particles: 6 };
+      : { stop: 0.065, shake: 2, duration: 0.1, particles: 6 };
     this.hitStopRemaining = Math.max(this.hitStopRemaining, profile.stop);
     for (const id of targetIds) this.flashes.set(id, 0.09);
     this.shakeRequest = { intensity: profile.shake, duration: profile.duration };
@@ -165,6 +164,12 @@ export class GameFeelSystem {
     this.hitStopRemaining = Math.max(this.hitStopRemaining, 0.045);
     this.shakeRequest = { intensity: 2.5, duration: 0.12 };
     this.spawnImpact(x, y, 12, '#67E8F9');
+  }
+
+  public consumeShakeRequest(): { intensity: number; duration: number } | null {
+    const request = this.shakeRequest;
+    this.shakeRequest = null;
+    return request;
   }
 
   public getSnapshot(): GameFeelSnapshot {

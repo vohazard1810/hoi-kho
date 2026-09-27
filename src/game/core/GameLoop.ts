@@ -26,27 +26,38 @@ export class GameLoop {
     const frame = (time: number) => {
       if (!this.running) return;
 
-      let deltaSeconds = (time - this.lastTime) / 1000;
-      this.lastTime = time;
+      try {
+        let deltaSeconds = (time - this.lastTime) / 1000;
+        this.lastTime = time;
 
-      // Clamp delta time to avoid large jumps if tab was in background
-      if (deltaSeconds > GAME_CONFIG.MAX_ACCUMULATED_TIME) {
-        deltaSeconds = GAME_CONFIG.MAX_ACCUMULATED_TIME;
+        // Clamp delta time to avoid large jumps if tab was in background
+        if (deltaSeconds > GAME_CONFIG.MAX_ACCUMULATED_TIME) {
+          deltaSeconds = GAME_CONFIG.MAX_ACCUMULATED_TIME;
+        }
+
+        this.accumulator += deltaSeconds;
+
+        const fixedDt = GAME_CONFIG.FIXED_TIMESTEP;
+        let steps = 0;
+        while (this.accumulator >= fixedDt && steps < 8) {
+          this.onUpdate(fixedDt);
+          this.accumulator -= fixedDt;
+          steps++;
+        }
+        if (this.accumulator > fixedDt) {
+          this.accumulator = 0; // Prevent death spiral on scene loading spikes
+        }
+
+        // Calculate interpolation alpha for smooth rendering
+        const interpolation = this.accumulator / fixedDt;
+        this.onRender(interpolation);
+      } catch (err) {
+        console.error('[GameLoop] Error during animation frame:', err);
+      } finally {
+        if (this.running) {
+          this.animationFrameId = requestAnimationFrame(frame);
+        }
       }
-
-      this.accumulator += deltaSeconds;
-
-      const fixedDt = GAME_CONFIG.FIXED_TIMESTEP;
-      while (this.accumulator >= fixedDt) {
-        this.onUpdate(fixedDt);
-        this.accumulator -= fixedDt;
-      }
-
-      // Calculate interpolation alpha for smooth rendering
-      const interpolation = this.accumulator / fixedDt;
-      this.onRender(interpolation);
-
-      this.animationFrameId = requestAnimationFrame(frame);
     };
 
     this.animationFrameId = requestAnimationFrame(frame);

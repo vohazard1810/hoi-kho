@@ -884,7 +884,7 @@ export class Stage1Scene implements Scene {
       }
     }
 
-    const shake = this.gameFeel.consumeShakeRequest();
+    const shake = this.gameFeel.consumeShakeRequest ? this.gameFeel.consumeShakeRequest() : null;
     if (shake) this.camera.startShake(shake.intensity, shake.duration);
 
     // 11. Update Loot System & Pickups

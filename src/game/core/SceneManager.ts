@@ -20,13 +20,17 @@ export class SceneManager {
       return;
     }
 
-    if (this.currentScene) {
-      this.currentScene.exit();
-    }
+    try {
+      if (this.currentScene) {
+        this.currentScene.exit();
+      }
 
-    this.currentSceneType = type;
-    this.currentScene = nextScene;
-    this.currentScene.enter();
+      this.currentSceneType = type;
+      this.currentScene = nextScene;
+      this.currentScene.enter();
+    } catch (err) {
+      console.error(`[SceneManager] Error entering scene "${type}":`, err);
+    }
   }
 
   public getCurrentSceneType(): SceneType | null {
@@ -39,13 +43,21 @@ export class SceneManager {
 
   public update(dt: number, input: Input): void {
     if (this.currentScene) {
-      this.currentScene.update(dt, input);
+      try {
+        this.currentScene.update(dt, input);
+      } catch (err) {
+        console.error(`[SceneManager] Scene update error in ${this.currentSceneType}:`, err);
+      }
     }
   }
 
   public render(renderer: Renderer, interpolation: number): void {
     if (this.currentScene) {
-      this.currentScene.render(renderer, interpolation);
+      try {
+        this.currentScene.render(renderer, interpolation);
+      } catch (err) {
+        console.error(`[SceneManager] Scene render error in ${this.currentSceneType}:`, err);
+      }
     }
   }
 }
