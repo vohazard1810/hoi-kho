@@ -14,6 +14,7 @@ import { Thug } from '../entities/Thug';
 import { Renderer, StageHazardOverlay } from '../rendering/Renderer';
 import { CollisionSystem } from '../systems/CollisionSystem';
 import { CombatSystem } from '../systems/CombatSystem';
+import { Hitbox } from '../core/types';
 import { InteractionSystem } from '../systems/InteractionSystem';
 import { LootSystem } from '../systems/LootSystem';
 import { ObjectiveSystem } from '../systems/ObjectiveSystem';
@@ -25,7 +26,6 @@ import { UpgradeSystem } from '../systems/UpgradeSystem';
 import { AudioManager, meleeSwingSfx, pickupSfx } from '../audio/AudioManager';
 import { DialogueSystem, DialogueLine } from '../systems/DialogueSystem';
 import { calculateParcelDamage } from '../systems/ParcelDamagePolicy';
-import { Hitbox } from '../systems/HitboxSystem';
 import { RunTelemetry } from '../systems/RunTelemetry';
 
 export type ZoneEncounterState = 'NOT_STARTED' | 'ACTIVE' | 'CLEARED';
@@ -183,7 +183,7 @@ export class Stage1Scene implements Scene {
         const ey = enemy.y + enemy.height / 2;
         if (Math.abs(ex - slamX) <= slamRadius && Math.abs(ey - slamY) <= 60) {
           const knockDir = ex >= slamX ? 1 : -1;
-          enemy.takeDamage(35, knockDir * 240, 150, slamX);
+          enemy.takeDamage(35, 0, knockDir * 240, 150, slamX);
         }
       }
     };
@@ -528,7 +528,7 @@ export class Stage1Scene implements Scene {
           if (this.dogClamp.mashRemaining <= 0) {
             this.dogClamp.active = false;
             this.nearbyPrompt = null;
-            clampedDog.takeDamage(30, this.player.facing === 'right' ? 240 : -240, 150, this.player.x);
+            clampedDog.takeDamage(30, 0, this.player.facing === 'right' ? 240 : -240, 150, this.player.x);
             this.audio.play('hit_heavy');
             this.audio.play('dog_bark');
             this.gameFeel.triggerComicText('ĐÁ VĂNG CHÓ! 💥', this.player.x, this.player.y - 25, '#fb923c');
@@ -768,7 +768,7 @@ export class Stage1Scene implements Scene {
       for (const e of allEnemies) {
         if (!e.isAlive) continue;
         if (Math.abs(e.x + e.width / 2 - this.motorbike.x) < 40) {
-          e.takeDamage(30, -280, 180, this.motorbike.x);
+          e.takeDamage(30, 0, -280, 180, this.motorbike.x);
         }
       }
 

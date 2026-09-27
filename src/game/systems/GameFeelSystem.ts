@@ -101,6 +101,10 @@ export class GameFeelSystem {
     else if (combo === 'ULTIMATE') this.addComicText('HỎA TỐC! ⚡', x, y - 56, '#FBBF24', 18);
   }
 
+  public triggerComicText(text: string, x: number, y: number, color: string = '#FDBA74', size: number = 14): void {
+    this.addComicText(text, x, y, color, size);
+  }
+
   private addComicText(text: string, x: number, y: number, color: string, size: number): void {
     this.comicTexts.push({
       id: `comic_${Date.now()}_${Math.random()}`,
