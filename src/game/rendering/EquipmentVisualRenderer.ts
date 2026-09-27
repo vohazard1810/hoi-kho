@@ -202,17 +202,20 @@ export class EquipmentVisualRenderer {
     ctx.fillText(`⚙ ${snapshot.parts}`, x + 50, y + 42);
 
     // 4 Equipment Slots (J, K, L, Q)
+    const isAirborne = !!player && !player.isGrounded;
     const slots = [
       {
         branch: 'J',
-        label: snapshot.equipped.get('J') === 'precision_scan'
+        label: isAirborne
+          ? 'ĐẠP RƠI'
+          : snapshot.equipped.get('J') === 'precision_scan'
           ? 'CHUẨN'
           : snapshot.equipped.get('J') === 'wide_scan'
           ? 'RỘNG'
           : snapshot.purchased.has('scanner_pro')
           ? 'PRO'
           : 'LIÊN HOÀN',
-        active: snapshot.purchased.has('scanner_pro') || snapshot.equipped.has('J'),
+        active: snapshot.purchased.has('scanner_pro') || snapshot.equipped.has('J') || isAirborne,
         tier2: snapshot.equipped.get('J') === 'precision_scan' || snapshot.equipped.get('J') === 'wide_scan',
       },
       {
@@ -286,11 +289,30 @@ export class EquipmentVisualRenderer {
       ctx.textAlign = 'right';
       const cooldown = slot.branch === 'L' ? player?.dodgeCooldownRemaining : slot.branch === 'K' ? player?.tapeCooldownRemaining : 0;
       const ready = slot.branch === 'Q' && (player?.momentum ?? 0) >= 100;
-      ctx.fillStyle = ready ? '#fbbf24' : '#cbd5e1';
-      ctx.fillText(cooldown && cooldown > 0.01 ? `${cooldown.toFixed(1)}s` : ready ? '[Q!]' : `[${slot.branch}]`, sx + slotW - 6, sy + 15);
-      if (ready) { ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2; ctx.strokeRect(sx, sy, slotW, slotH); }
+      const isAirDropSlot = slot.branch === 'J' && isAirborne;
+      ctx.fillStyle = ready ? '#fbbf24' : isAirDropSlot ? '#facc15' : '#cbd5e1';
+      ctx.fillText(
+        cooldown && cooldown > 0.01
+          ? `${cooldown.toFixed(1)}s`
+          : ready
+          ? '[Q!]'
+          : isAirDropSlot
+          ? '[W+J!]'
+          : `[${slot.branch}]`,
+        sx + slotW - 6,
+        sy + 15
+      );
+      if (ready) {
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(sx, sy, slotW, slotH);
+      } else if (isAirDropSlot) {
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(sx, sy, slotW, slotH);
+      }
 
-      ctx.fillStyle = slot.tier2 ? '#e0f2fe' : slot.active ? '#ffedd5' : '#cbd5e1';
+      ctx.fillStyle = slot.tier2 ? '#e0f2fe' : isAirDropSlot ? '#fef08a' : slot.active ? '#ffedd5' : '#cbd5e1';
       ctx.font = 'bold 10px system-ui, sans-serif';
       ctx.fillText(slot.label, sx + slotW - 6, sy + 32);
     });

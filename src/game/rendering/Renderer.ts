@@ -28,9 +28,9 @@ import { TrainingTarget } from '../systems/TrainingTarget';
 import { ProductionVisualsV19 } from './ProductionVisualsV19';
 import { EconomySnapshot } from '../systems/EconomySystem';
 
-const STAGE_HUMAN_SCALE = 1.25;
-const STAGE_DOG_SCALE = 1.16;
-const STAGE_BOSS_SCALE = 1.1;
+const STAGE_HUMAN_SCALE = 1.48;
+const STAGE_DOG_SCALE = 1.35;
+const STAGE_BOSS_SCALE = 1.28;
 
 export interface HubProgressOverlay {
   economy: EconomySnapshot;
@@ -59,6 +59,7 @@ export class Renderer {
   private portraitBounds = new WeakMap<object, { x: number; y: number; width: number; height: number }>();
   private encounterLabel = '';
   private encounterAt = 0;
+  private epilogueImage: HTMLImageElement | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -222,19 +223,19 @@ export class Renderer {
     const accent = line.tone === 'boss' ? '#ef4444' : line.tone === 'warning' ? '#f59e0b' : line.tone === 'success' ? '#22c55e' : '#38bdf8';
     ctx.save();
     ctx.fillStyle = 'rgba(2, 6, 23, 0.42)'; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    const boxX = 90, boxY = 540, boxW = 1100, boxH = 155;
+    const boxX = 90, boxY = 565, boxW = 1100, boxH = 135;
     ctx.shadowColor = 'rgba(0,0,0,0.72)'; ctx.shadowBlur = 22; ctx.shadowOffsetY = 7;
     ctx.fillStyle = 'rgba(7, 15, 29, 0.96)'; ctx.fillRect(boxX, boxY, boxW, boxH);
     ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
     ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1; ctx.strokeRect(boxX, boxY, boxW, boxH);
     ctx.fillStyle = accent; ctx.fillRect(boxX, boxY, 6, boxH);
-    const hasPortrait = this.renderDialoguePortrait(line.speaker, 112, 552, 108, 112, accent);
-    const textX = hasPortrait ? 248 : 122;
-    ctx.textAlign = 'left'; ctx.fillStyle = accent; ctx.font = '900 14px system-ui, sans-serif'; ctx.fillText(line.speaker, textX, 568);
-    ctx.fillStyle = '#f8fafc'; ctx.font = '20px system-ui, sans-serif';
-    this.drawWrappedText(line.text, textX, 600, hasPortrait ? 900 : 1035, 26);
+    const hasPortrait = this.renderDialoguePortrait(line.speaker, 112, 575, 96, 110, accent);
+    const textX = hasPortrait ? 236 : 122;
+    ctx.textAlign = 'left'; ctx.fillStyle = accent; ctx.font = '900 14px system-ui, sans-serif'; ctx.fillText(line.speaker, textX, 590);
+    ctx.fillStyle = '#f8fafc'; ctx.font = '19px system-ui, sans-serif';
+    this.drawWrappedText(line.text, textX, 618, hasPortrait ? 920 : 1035, 25);
     ctx.textAlign = 'right'; ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace';
-    ctx.fillText(`${snapshot.index + 1}/${snapshot.total}  •  [E/J/SPACE] TIẾP  •  [ESC] BỎ QUA`, 1162, 672);
+    ctx.fillText(`${snapshot.index + 1}/${snapshot.total}  •  [E/J/SPACE] TIẾP  •  [ESC] BỎ QUA`, 1162, 686);
     ctx.restore();
   }
 
@@ -1228,60 +1229,82 @@ export class Renderer {
     const w = this.canvas.width;
     const h = this.canvas.height;
 
-    // Dark atmospheric cinematic background
-    ctx.fillStyle = '#060d19';
-    ctx.fillRect(0, 0, w, h);
+    if (!this.epilogueImage && typeof Image !== 'undefined') {
+      this.epilogueImage = new Image();
+      this.epilogueImage.src = '/assets/cutscenes/epilogue_room.png';
+    }
 
-    // Vignette card
-    const cardX = 140;
-    const cardY = 95;
-    const cardW = w - 280;
-    const cardH = h - 190;
+    if (this.epilogueImage && this.epilogueImage.complete && this.epilogueImage.naturalWidth > 0) {
+      ctx.drawImage(this.epilogueImage, 0, 0, w, h);
+    } else {
+      ctx.fillStyle = '#060d19';
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    // Semi-transparent cinematic story card on left-center
+    const cardX = 60;
+    const cardY = 60;
+    const cardW = 680;
+    const cardH = h - 120;
 
     ctx.save();
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
-    ctx.shadowBlur = 32;
-    ctx.fillRect(cardX, cardY, cardW, cardH);
+    ctx.fillStyle = 'rgba(10, 18, 32, 0.88)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+    ctx.shadowBlur = 28;
+    ctx.beginPath();
+    ctx.roundRect(cardX, cardY, cardW, cardH, 12);
+    ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(cardX, cardY, cardW, cardH);
+    ctx.stroke();
 
     // Accent line
     ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(cardX, cardY, cardW, 4);
+    ctx.beginPath();
+    ctx.roundRect(cardX, cardY, cardW, 4, [12, 12, 0, 0]);
+    ctx.fill();
 
-    // Text content
-    ctx.textAlign = 'center';
+    // Header & Title
+    ctx.textAlign = 'left';
     ctx.fillStyle = '#f59e0b';
-    ctx.font = 'bold 14px monospace';
-    ctx.fillText('HOÀN TẤT CHƯƠNG 1 • HẺM KHÔNG LỐI THOÁT', w / 2, cardY + 52);
+    ctx.font = 'bold 13px monospace';
+    ctx.fillText('HOÀN TẤT CHƯƠNG 1 • HẺM KHÔNG LỐI THOÁT', cardX + 36, cardY + 44);
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 28px system-ui, sans-serif';
-    ctx.fillText('ĐÊM VỀ PHÒNG TRỌ', w / 2, cardY + 105);
+    ctx.font = 'bold 26px system-ui, sans-serif';
+    ctx.fillText('ĐÊM VỀ PHÒNG TRỌ', cardX + 36, cardY + 86);
 
-    ctx.fillStyle = '#cbd5e1';
-    ctx.font = '16px system-ui, sans-serif';
+    const payment = result.debtPayment ?? result.totalReward ?? 0;
+    const debt = result.remainingDebt ?? Math.max(0, 20_000_000 - payment);
     const lines = [
-      'Một ngày giao hàng trầy da tróc vảy... nhưng kiện hàng đã đến đúng tay Chú Tư an toàn.',
-      `Khoản nợ gốc 20 triệu nay đã giảm bớt được ${(result.netPay).toLocaleString('vi-VN')} VNĐ.`,
-      `Số nợ hiện tại: ${(result.debtRemaining).toLocaleString('vi-VN')} VNĐ.`,
+      'Một ngày giao hàng trầy da tróc vảy... nhưng kiện hàng',
+      'đã đến tận tay Chú Tư an toàn nguyên vẹn.',
+      '',
+      `Tiền công trừ thẳng vào nợ: +${payment.toLocaleString('vi-VN')} VNĐ`,
+      `Khoản nợ gốc 20 triệu còn lại: ${debt.toLocaleString('vi-VN')} VNĐ`,
       '',
       'Đêm nay nằm ngửa nhìn trần nhà, quạt máy kêu rè rè.',
-      'Khờ mỉm cười nhẹ... Ngày mai Sài Gòn vẫn chờ, chặng đường giải phóng bản thân vẫn tiếp tục.'
+      'Khờ mỉm cười nhẹ... Ngày mai Sài Gòn vẫn chờ,',
+      'chặng đường giải phóng bản thân vẫn tiếp tục bước tới!'
     ];
 
-    let textY = cardY + 165;
+    let textY = cardY + 130;
     for (const l of lines) {
-      ctx.fillText(l, w / 2, textY);
-      textY += 32;
+      if (l.startsWith('Tiền công') || l.startsWith('Khoản nợ')) {
+        ctx.fillStyle = l.startsWith('Tiền công') ? '#22c55e' : '#f59e0b';
+        ctx.font = 'bold 17px monospace';
+      } else {
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '16px system-ui, sans-serif';
+      }
+      ctx.fillText(l, cardX + 36, textY);
+      textY += 28;
     }
 
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 14px monospace';
-    ctx.fillText('[ E / J / SPACE ] TRỞ VỀ TRẠM SXP ĐỂ MỞ ĐƠN TIẾP THEO', w / 2, cardY + cardH - 30);
+    ctx.fillText('[ E / J / SPACE ] TRỞ VỀ TRẠM SXP ĐỂ MỞ ĐƠN TIẾP THEO', cardX + 36, cardY + cardH - 26);
     ctx.restore();
   }
 }

@@ -340,10 +340,14 @@ export class Stage1Scene implements Scene {
 
     if (this.deliveryPending) return;
     this.deliveryPending = true;
+    const cond = ObjectiveSystem.getInstance().parcelCondition;
+    const chutuFeedback = cond >= 80
+      ? 'Kiện hàng nguyên vẹn 100%! Chú chấm 5 sao ⭐⭐⭐⭐⭐ và bo thêm cho con ly nước mía nhé!'
+      : 'Hơi móp một góc do tụi giang hồ chặn đường, nhưng đồ bên trong an toàn! Cảm ơn con nhiều nghen!';
     this.dialogue.start([
-      { speaker: 'CHÚ TƯ', text: 'Tới được đây là giỏi rồi. Kiện hàng vẫn còn nguyên chứ?', tone: 'neutral' },
-      { speaker: 'HỘI KHỜ', text: 'Đơn SXP-8924, giao đúng người. Ký nhận giúp con nha chú.', tone: 'success' },
-      { speaker: 'CHÚ TƯ', text: 'Cảm ơn con. Nhưng cái hẻm này… mới chỉ là cửa vào thôi.', tone: 'warning' },
+      { speaker: 'CHÚ TƯ', text: 'Tới được đây là giỏi lắm rồi! Đơn SXP-8924 của chú phải không con?', tone: 'neutral' },
+      { speaker: 'HỘI KHỜ', text: 'Dạ, kiện hàng giao đúng người tận tay! Chú kiểm tra ký nhận giúp con nha.', tone: 'success' },
+      { speaker: 'CHÚ TƯ', text: chutuFeedback, tone: 'success' },
     ], () => {
       const objective = ObjectiveSystem.getInstance();
       this.telemetry.complete(objective.parcelCondition);

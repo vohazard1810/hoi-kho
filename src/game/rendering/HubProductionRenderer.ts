@@ -4,7 +4,7 @@ import { NPC } from '../entities/NPC';
 // Player idle has a 76 px opaque body inside its 96 px frame. Keeping Cô Ba
 // at 84 px makes her ~10.5% taller without visually detaching her from gameplay scale.
 export const COBA_RENDER_HEIGHT = 84;
-export const HUB_HUMAN_SCALE = 1.85;
+export const HUB_HUMAN_SCALE = 2.65;
 
 export class HubProductionRenderer {
   private background: HTMLImageElement | null = null;

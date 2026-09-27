@@ -123,25 +123,27 @@ export default function App() {
       {/* Footer Info */}
       <footer
         id="game_footer"
-        className="w-full max-w-[1280px] flex flex-wrap items-center justify-between text-xs text-slate-500 py-2 px-3 gap-2"
+        className="w-full max-w-[1280px] flex flex-wrap items-center justify-between text-xs text-slate-400 py-2 px-3 gap-2"
       >
-        {scene === 'MENU' && <div className="flex items-center gap-2">
-          <span className="text-slate-400 font-semibold">Phím:</span>
-          <span>A/D / Mũi tên: Di chuyển</span>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="text-amber-400 font-bold uppercase tracking-wider">🎮 Phím:</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-cyan-300 font-mono">A/D</kbd> Di chuyển</span>
           <span>•</span>
-          <span>Space / W: Nhảy</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-cyan-300 font-mono">W/Space</kbd> Nhảy</span>
           <span>•</span>
-          <span>J: Combo Đánh</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-yellow-300 font-mono">W+J</kbd> <strong className="text-yellow-300">Đạp Rơi</strong></span>
           <span>•</span>
-          <span>K: Bắn Băng Keo</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-orange-300 font-mono">J</kbd> Combo Đánh</span>
           <span>•</span>
-          <span>L: Lướt Né</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-cyan-300 font-mono">K</kbd> Băng Keo</span>
           <span>•</span>
-          <span>Q: Tuyệt Kỹ</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-emerald-300 font-mono">L</kbd> Lướt Né</span>
           <span>•</span>
-          <span>E: Tương Tác / Bàn Đồ Nghề</span>
-        </div>}
-        <div className="text-slate-600 font-mono">{BUILD_ID} • Giữ kiện, né đúng, trả nợ thật.</div>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-purple-300 font-mono">Q</kbd> Tuyệt Kỹ</span>
+          <span>•</span>
+          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono">E</kbd> Tương Tác</span>
+        </div>
+        <div className="text-slate-500 font-mono text-[11px]">{BUILD_ID} • Giữ kiện, né đúng, trả nợ thật.</div>
       </footer>
     </div>
   );
