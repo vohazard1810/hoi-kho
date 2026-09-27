@@ -90,7 +90,7 @@ export class Stage1Scene implements Scene {
   private nearbyPrompt: string | null = null;
   private currentZoneId: string = 'A';
   private currentZoneName: string = 'Hẻm Đầu Cầu';
-  private currentEncounterName: string = 'Tutorial Dog';
+  private currentEncounterName: string = 'Chó Dữ Hẻm Cầu';
 
   constructor(sceneManager: SceneManager) {
     this.sceneManager = sceneManager;
@@ -199,6 +199,8 @@ export class Stage1Scene implements Scene {
     this.nearbyPrompt = null;
     this.currentZoneId = 'A';
     this.currentZoneName = 'Hẻm Đầu Cầu';
+    this.currentEncounterName = 'Chó Dữ Hẻm Cầu';
+    this.updateCurrentZoneAndEncounter();
 
     // Capture initial checkpoint for Zone A
     this.captureEncounterCheckpoint('A');
@@ -392,10 +394,22 @@ export class Stage1Scene implements Scene {
     const objective = ObjectiveSystem.getInstance();
 
     if (this.dialogue.isActive()) {
-      if (input.isJustPressed('cancel')) this.dialogue.skip();
-      else if (input.isJustPressed('interact') || input.isJustPressed('attack') || input.isJustPressed('jump')) this.dialogue.advance();
-      this.camera.updateShake(dt);
-      return;
+      if (input.isJustPressed('cancel')) {
+        this.dialogue.skip();
+      } else if (
+        input.isJustPressed('interact') ||
+        input.isJustPressed('attack') ||
+        input.isJustPressed('jump') ||
+        input.isJustPressed('moveLeft') ||
+        input.isJustPressed('moveRight') ||
+        input.isJustPressed('dodge')
+      ) {
+        this.dialogue.advance();
+      }
+      if (this.deliveryPending) {
+        this.camera.updateShake(dt);
+        return;
+      }
     }
 
     this.telemetry.update(dt);

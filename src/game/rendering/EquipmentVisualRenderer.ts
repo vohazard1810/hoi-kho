@@ -173,35 +173,73 @@ export class EquipmentVisualRenderer {
   }
 
   public static renderHud(ctx: CanvasRenderingContext2D, snapshot: UpgradeSnapshot, player?: Player): void {
-    const x = 410;
+    const x = 390;
     const y = 650;
-    const w = 460;
-    const h = 56;
+    const w = 500;
+    const h = 58;
 
     ctx.save();
-    // Container background & border
-    ctx.fillStyle = 'rgba(7, 15, 29, 0.92)';
-    ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, w, h);
 
-    // Parts counter badge on left
-    ctx.fillStyle = 'rgba(249, 115, 22, 0.18)';
-    ctx.fillRect(x + 8, y + 8, 84, 40);
-    ctx.strokeStyle = '#f97316';
+    // 1. Console drop shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 4;
+
+    // Chamfered cyber console chassis
+    ctx.beginPath();
+    ctx.moveTo(x + 10, y);
+    ctx.lineTo(x + w - 10, y);
+    ctx.lineTo(x + w, y + 10);
+    ctx.lineTo(x + w, y + h);
+    ctx.lineTo(x, y + h);
+    ctx.lineTo(x, y + 10);
+    ctx.closePath();
+
+    const bgGrad = ctx.createLinearGradient(x, y, x, y + h);
+    bgGrad.addColorStop(0, '#0a1220');
+    bgGrad.addColorStop(0.5, '#070d18');
+    bgGrad.addColorStop(1, '#050912');
+    ctx.fillStyle = bgGrad;
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Dual-layer metallic & neon cyber border
+    ctx.strokeStyle = 'rgba(71, 85, 105, 0.6)';
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(x + 8, y + 8, 84, 40);
+    ctx.stroke();
+
+    // Top orange neon accent strip
+    ctx.strokeStyle = 'rgba(249, 115, 22, 0.85)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x + 12, y + 1);
+    ctx.lineTo(x + w - 12, y + 1);
+    ctx.stroke();
+
+    // 2. Parts counter module on left
+    const px = x + 8;
+    const py = y + 7;
+    const pw = 84;
+    const ph = 44;
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.fillRect(px, py, pw, ph);
+    ctx.strokeStyle = 'rgba(249, 115, 22, 0.5)';
+    ctx.lineWidth = 1.2;
+    ctx.strokeRect(px, py, pw, ph);
 
     ctx.fillStyle = '#fb923c';
-    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.font = 'bold 9px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('LINH KIỆN', x + 50, y + 23);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 13px monospace';
-    ctx.fillText(`⚙ ${snapshot.parts}`, x + 50, y + 42);
+    ctx.fillText('LINH KIỆN', px + pw / 2, py + 14);
 
-    // 4 Equipment Slots (J, K, L, Q)
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 15px monospace';
+    ctx.fillText(`⚙ ${snapshot.parts}`, px + pw / 2, py + 34);
+
+    // 3. 4 Tactical Equipment Keycaps (J, K, L, Q)
     const isAirborne = !!player && !player.isGrounded;
     const slots = [
       {
@@ -256,65 +294,126 @@ export class EquipmentVisualRenderer {
       },
     ];
 
-    const slotStartX = x + 102;
-    const slotW = 80;
-    const slotH = 40;
-    const slotGap = 6;
+    const slotStartX = x + 100;
+    const slotW = 90;
+    const slotH = 44;
+    const slotGap = 8;
 
     slots.forEach((slot, idx) => {
       const sx = slotStartX + idx * (slotW + slotGap);
-      const sy = y + 8;
+      const sy = y + 7;
 
-      ctx.fillStyle = slot.tier2
-        ? 'rgba(6, 182, 212, 0.2)'
-        : slot.active
-        ? 'rgba(234, 88, 12, 0.2)'
-        : 'rgba(30, 41, 59, 0.6)';
-      ctx.fillRect(sx, sy, slotW, slotH);
-
-      ctx.strokeStyle = slot.tier2
-        ? '#22d3ee'
-        : slot.active
-        ? '#ea580c'
-        : '#475569';
-      ctx.lineWidth = slot.active ? 1.5 : 1;
-      ctx.strokeRect(sx, sy, slotW, slotH);
-
-      ctx.fillStyle = slot.tier2 ? '#67e8f9' : slot.active ? '#fdba74' : '#94a3b8';
-      ctx.font = 'bold 10px monospace';
-      ctx.textAlign = 'center';
-      const equippedId = snapshot.equipped.get(slot.branch as 'J' | 'K' | 'L' | 'Q');
-      const baseIds: Record<string, UpgradeId> = { J: 'scanner_pro', K: 'sticky_tape', L: 'reflective_backpack', Q: 'express_core' };
-      this.renderUpgradeIcon(ctx, equippedId ?? baseIds[slot.branch], sx + 5, sy + 2, 24, 1);
-      ctx.textAlign = 'right';
       const cooldown = slot.branch === 'L' ? player?.dodgeCooldownRemaining : slot.branch === 'K' ? player?.tapeCooldownRemaining : 0;
       const ready = slot.branch === 'Q' && (player?.momentum ?? 0) >= 100;
       const isAirDropSlot = slot.branch === 'J' && isAirborne;
-      ctx.fillStyle = ready ? '#fbbf24' : isAirDropSlot ? '#facc15' : '#cbd5e1';
-      ctx.fillText(
-        cooldown && cooldown > 0.01
-          ? `${cooldown.toFixed(1)}s`
-          : ready
-          ? '[Q!]'
-          : isAirDropSlot
-          ? '[W+J!]'
-          : `[${slot.branch}]`,
-        sx + slotW - 6,
-        sy + 15
-      );
+      const isOnCooldown = !!(cooldown && cooldown > 0.01);
+
+      // Slot Socket Base
+      ctx.fillStyle = '#050914';
+      ctx.fillRect(sx, sy, slotW, slotH);
+
+      // Keycap Button Gradient Fill
+      const btnGrad = ctx.createLinearGradient(sx, sy, sx, sy + slotH);
       if (ready) {
-        ctx.strokeStyle = '#fbbf24';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(sx, sy, slotW, slotH);
+        btnGrad.addColorStop(0, '#7c2d12');
+        btnGrad.addColorStop(1, '#ea580c');
       } else if (isAirDropSlot) {
-        ctx.strokeStyle = '#facc15';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(sx, sy, slotW, slotH);
+        btnGrad.addColorStop(0, '#854d0e');
+        btnGrad.addColorStop(1, '#ca8a04');
+      } else if (slot.tier2) {
+        btnGrad.addColorStop(0, '#0e3a4e');
+        btnGrad.addColorStop(1, '#082535');
+      } else if (slot.active) {
+        btnGrad.addColorStop(0, '#2d1808');
+        btnGrad.addColorStop(1, '#1b0e04');
+      } else {
+        btnGrad.addColorStop(0, '#131e30');
+        btnGrad.addColorStop(1, '#0a101d');
+      }
+      ctx.fillStyle = btnGrad;
+      ctx.fillRect(sx, sy, slotW, slotH);
+
+      // Top Specular Lip
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
+      ctx.fillRect(sx, sy, slotW, 2);
+
+      // Keycap Border
+      let borderColor = '#334155';
+      let borderWidth = 1;
+      if (ready) {
+        const qPulse = 0.7 + Math.sin(performance.now() / 110) * 0.3;
+        borderColor = '#fbbf24';
+        borderWidth = 2;
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 10 * qPulse;
+      } else if (isAirDropSlot) {
+        borderColor = '#facc15';
+        borderWidth = 2;
+      } else if (slot.tier2) {
+        borderColor = '#22d3ee';
+        borderWidth = 1.5;
+      } else if (slot.active) {
+        borderColor = '#ea580c';
+        borderWidth = 1.2;
+      }
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = borderWidth;
+      ctx.strokeRect(sx, sy, slotW, slotH);
+      ctx.shadowBlur = 0;
+
+      // Icon Ambient Back-Aura
+      const auraColor = ready
+        ? 'rgba(251, 191, 36, 0.45)'
+        : isAirDropSlot
+        ? 'rgba(250, 204, 21, 0.45)'
+        : slot.tier2
+        ? 'rgba(34, 211, 238, 0.35)'
+        : slot.active
+        ? 'rgba(249, 115, 22, 0.3)'
+        : 'rgba(148, 163, 184, 0.15)';
+      const aura = ctx.createRadialGradient(sx + 18, sy + 22, 2, sx + 18, sy + 22, 18);
+      aura.addColorStop(0, auraColor);
+      aura.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = aura;
+      ctx.fillRect(sx + 2, sy + 4, 32, 36);
+
+      // Render Upgrade Icon
+      const equippedId = snapshot.equipped.get(slot.branch as 'J' | 'K' | 'L' | 'Q');
+      const baseIds: Record<string, UpgradeId> = { J: 'scanner_pro', K: 'sticky_tape', L: 'reflective_backpack', Q: 'express_core' };
+      this.renderUpgradeIcon(ctx, equippedId ?? baseIds[slot.branch], sx + 6, sy + 10, 24, 1);
+
+      // Cooldown sweep mask
+      if (isOnCooldown) {
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.72)';
+        ctx.fillRect(sx, sy, slotW, slotH);
       }
 
-      ctx.fillStyle = slot.tier2 ? '#e0f2fe' : isAirDropSlot ? '#fef08a' : slot.active ? '#ffedd5' : '#cbd5e1';
+      // Backlit Keybind Cap (Top-Right)
+      const keycapText = isOnCooldown
+        ? `${cooldown.toFixed(1)}s`
+        : ready
+        ? '[Q!]'
+        : isAirDropSlot
+        ? '[W+J!]'
+        : `[${slot.branch}]`;
+
+      ctx.fillStyle = isOnCooldown ? '#ef4444' : ready ? '#fbbf24' : isAirDropSlot ? '#fef08a' : '#ffffff';
+      ctx.font = '900 11px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(keycapText, sx + slotW - 6, sy + 16);
+
+      // Vietnamese Skill Label (Bottom-Right)
+      ctx.fillStyle = isOnCooldown
+        ? '#94a3b8'
+        : slot.tier2
+        ? '#67e8f9'
+        : isAirDropSlot
+        ? '#fef08a'
+        : slot.active
+        ? '#fdba74'
+        : '#cbd5e1';
       ctx.font = 'bold 10px system-ui, sans-serif';
-      ctx.fillText(slot.label, sx + slotW - 6, sy + 32);
+      ctx.fillText(slot.label, sx + slotW - 6, sy + 34);
     });
 
     ctx.restore();

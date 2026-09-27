@@ -218,73 +218,94 @@ export class Renderer {
 
   public renderDialogueOverlay(snapshot: DialogueSnapshot): void {
     if (!snapshot.active || !snapshot.line) return;
-    const ctx = this.ctx;
-    const line = snapshot.line;
-    const accent = line.tone === 'boss' ? '#ef4444' : line.tone === 'warning' ? '#f59e0b' : line.tone === 'success' ? '#22c55e' : '#38bdf8';
-    ctx.save();
-    ctx.fillStyle = 'rgba(2, 6, 23, 0.42)'; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    const boxX = 90, boxY = 565, boxW = 1100, boxH = 135;
-    ctx.shadowColor = 'rgba(0,0,0,0.72)'; ctx.shadowBlur = 22; ctx.shadowOffsetY = 7;
-    ctx.fillStyle = 'rgba(7, 15, 29, 0.96)'; ctx.fillRect(boxX, boxY, boxW, boxH);
-    ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-    ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1; ctx.strokeRect(boxX, boxY, boxW, boxH);
-    ctx.fillStyle = accent; ctx.fillRect(boxX, boxY, 6, boxH);
-    const hasPortrait = this.renderDialoguePortrait(line.speaker, 112, 575, 96, 110, accent);
-    const textX = hasPortrait ? 236 : 122;
-    ctx.textAlign = 'left'; ctx.fillStyle = accent; ctx.font = '900 14px system-ui, sans-serif'; ctx.fillText(line.speaker, textX, 590);
-    ctx.fillStyle = '#f8fafc'; ctx.font = '19px system-ui, sans-serif';
-    this.drawWrappedText(line.text, textX, 618, hasPortrait ? 920 : 1035, 25);
-    ctx.textAlign = 'right'; ctx.fillStyle = '#94a3b8'; ctx.font = '12px monospace';
-    ctx.fillText(`${snapshot.index + 1}/${snapshot.total}  •  [E/J/SPACE] TIẾP  •  [ESC] BỎ QUA`, 1162, 686);
-    ctx.restore();
+    try {
+      const ctx = this.ctx;
+      const line = snapshot.line;
+      const accent = line.tone === 'boss' ? '#ef4444' : line.tone === 'warning' ? '#f59e0b' : line.tone === 'success' ? '#22c55e' : '#38bdf8';
+      ctx.save();
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.42)';
+      ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      const boxX = 90, boxY = 565, boxW = 1100, boxH = 135;
+      ctx.shadowColor = 'rgba(0,0,0,0.72)';
+      ctx.shadowBlur = 22;
+      ctx.shadowOffsetY = 7;
+      ctx.fillStyle = 'rgba(7, 15, 29, 0.96)';
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(boxX, boxY, boxW, boxH);
+      ctx.fillStyle = accent;
+      ctx.fillRect(boxX, boxY, 6, boxH);
+      const hasPortrait = this.renderDialoguePortrait(line.speaker, 112, 575, 96, 110, accent);
+      const textX = hasPortrait ? 236 : 122;
+      ctx.textAlign = 'left';
+      ctx.fillStyle = accent;
+      ctx.font = '900 14px system-ui, sans-serif';
+      ctx.fillText(line.speaker, textX, 590);
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '19px system-ui, sans-serif';
+      this.drawWrappedText(line.text, textX, 618, hasPortrait ? 920 : 1035, 25);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px monospace';
+      ctx.fillText(`${snapshot.index + 1}/${snapshot.total}  •  [SPACE / J / E] TIẾP  •  [A / D] DI CHUYỂN  •  [ESC] BỎ QUA`, 1162, 686);
+      ctx.restore();
+    } catch {
+      // Safe fallback - dialogue rendering failure must never crash the game loop
+    }
   }
 
   private renderDialoguePortrait(speaker: string, x: number, y: number, w: number, h: number, accent: string): boolean {
-    let image: HTMLImageElement | null = null;
-    let sx = 0, sy = 0, sw = 0, sh = 0;
-    const isFullArt = speaker.includes('CÔ BA') || speaker.includes('CHÚ TƯ');
-    if (speaker.includes('CÔ BA')) image = this.hubProduction.getCoBaImage();
-    else if (speaker.includes('CHÚ TƯ')) image = this.stageNpc.getImage();
-    else {
-      const id = speaker.includes('CHÓ ĐẠI CA') ? 'boss_dog' : speaker.includes('HỘI KHỜ') ? 'player' : '';
-      const state = id ? AssetManager.getInstance().getCharacterSet(id)?.states.get('idle') : null;
-      if (state) { image = state.image; sw = state.frameWidth; sh = state.frameHeight; }
-    }
-    if (!image) return false;
-    if (!sw) {
-      sw = image.naturalWidth;
-      sh = image.naturalHeight;
-    }
-    // Crop the opaque actor first: empty atlas padding is not a face anchor.
-    let bounds = this.portraitBounds.get(image);
-    if (!bounds) {
-      const scratch = document.createElement('canvas'); scratch.width = sw; scratch.height = sh;
-      const scratchCtx = scratch.getContext('2d');
-      if (scratchCtx) {
-        scratchCtx.drawImage(image, 0, 0, sw, sh, 0, 0, sw, sh);
-        const data = scratchCtx.getImageData(0, 0, sw, sh).data;
-        let left = sw, top = sh, right = 0, bottom = 0;
-        for (let yy = 0; yy < sh; yy++) for (let xx = 0; xx < sw; xx++) {
-          if (data[(yy * sw + xx) * 4 + 3] > 64) { left = Math.min(left, xx); top = Math.min(top, yy); right = Math.max(right, xx); bottom = Math.max(bottom, yy); }
+    try {
+      let image: HTMLImageElement | null = null;
+      let sx = 0, sy = 0, sw = 0, sh = 0;
+      if (speaker.includes('CÔ BA')) {
+        image = this.hubProduction.getCoBaImage();
+      } else if (speaker.includes('CHÚ TƯ')) {
+        image = this.stageNpc.getImage();
+      } else {
+        const id = speaker.includes('CHÓ ĐẠI CA') ? 'boss_dog' : speaker.includes('HỘI KHỜ') ? 'player' : '';
+        const state = id ? AssetManager.getInstance().getCharacterSet(id)?.states.get('idle') : null;
+        if (state) {
+          image = state.image;
+          sw = state.frameWidth;
+          sh = state.frameHeight;
         }
-        bounds = right > left ? { x: left, y: top, width: right - left + 1, height: bottom - top + 1 } : { x: 0, y: 0, width: sw, height: sh };
-        this.portraitBounds.set(image, bounds);
       }
+      if (!image || !image.complete || (image.naturalWidth === 0 && image.width === 0)) return false;
+      if (!sw) {
+        sw = image.naturalWidth || image.width || 100;
+        sh = image.naturalHeight || image.height || 100;
+      }
+
+      // Safe portrait crop without canvas getImageData
+      let cropW = sw;
+      let cropH = speaker.includes('CHÓ ĐẠI CA') ? sh : Math.min(sh, Math.round(sw * 0.95));
+
+      this.ctx.save();
+      this.ctx.fillStyle = 'rgba(15,23,42,0.96)';
+      this.ctx.fillRect(x, y, w, h);
+      this.ctx.strokeStyle = accent;
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeRect(x, y, w, h);
+
+      this.ctx.beginPath();
+      this.ctx.rect(x + 3, y + 3, w - 6, h - 6);
+      this.ctx.clip();
+
+      const scale = Math.min((w - 8) / cropW, (h - 8) / cropH);
+      const dw = cropW * scale;
+      const dh = cropH * scale;
+      this.ctx.imageSmoothingEnabled = true;
+      this.ctx.imageSmoothingQuality = 'high';
+      this.ctx.drawImage(image, sx, sy, cropW, cropH, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+      this.ctx.restore();
+      return true;
+    } catch {
+      return false;
     }
-    if (bounds) {
-      sx = bounds.x; sy = bounds.y; sw = bounds.width;
-      sh = Math.ceil(bounds.height * (speaker.includes('CHÓ ĐẠI CA') ? 1 : 0.55));
-    }
-    this.ctx.save();
-    this.ctx.fillStyle = 'rgba(15,23,42,0.96)'; this.ctx.fillRect(x, y, w, h);
-    this.ctx.strokeStyle = accent; this.ctx.lineWidth = 2; this.ctx.strokeRect(x, y, w, h);
-    this.ctx.beginPath(); this.ctx.rect(x + 3, y + 3, w - 6, h - 6); this.ctx.clip();
-    const scale = Math.min((w - 12) / sw, (h - 12) / sh);
-    const dw = sw * scale, dh = sh * scale;
-    this.ctx.imageSmoothingEnabled = true; this.ctx.imageSmoothingQuality = 'high';
-    this.ctx.drawImage(image, sx, sy, sw, sh, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
-    this.ctx.restore();
-    return true;
   }
 
   private drawWrappedText(text: string, x: number, y: number, maxWidth: number, lineHeight: number): void {
@@ -1275,7 +1296,7 @@ export class Renderer {
       objectiveName
     );
     EquipmentVisualRenderer.renderHud(this.ctx, upgradeSnapshot, player);
-    this.v19Visuals.renderParcel(this.ctx, parcelCondition, 273, 53, 52, 35);
+    this.v19Visuals.renderParcel(this.ctx, parcelCondition, 342, 60, 48, 32);
 
     // 8. Debug Overlay (only if DEV_MODE = true)
     if (currentEncounterName !== this.encounterLabel) {

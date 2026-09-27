@@ -999,163 +999,297 @@ export class PlaceholderRenderer {
     // ==========================================
     // 1. ARCADE STREET-BRAWLER STATUS CARD (Top-Left)
     // ==========================================
-    const cardX = 20, cardY = 16, cardW = 346, cardH = 122;
+    const cardX = 20, cardY = 14, cardW = 390, cardH = 126;
 
     // Drop shadow
-    ctx.shadowColor = 'rgba(0,0,0,0.65)';
-    ctx.shadowBlur = 16;
+    ctx.shadowColor = 'rgba(0,0,0,0.75)';
+    ctx.shadowBlur = 18;
     ctx.shadowOffsetY = 6;
-    ctx.fillStyle = '#060e1c';
-    ctx.fillRect(cardX, cardY, cardW, cardH);
+
+    // Angled chamfered cyber chassis
+    ctx.beginPath();
+    ctx.moveTo(cardX, cardY);
+    ctx.lineTo(cardX + cardW - 14, cardY);
+    ctx.lineTo(cardX + cardW, cardY + 14);
+    ctx.lineTo(cardX + cardW, cardY + cardH);
+    ctx.lineTo(cardX + 12, cardY + cardH);
+    ctx.lineTo(cardX, cardY + cardH - 12);
+    ctx.closePath();
+
+    const cardGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
+    cardGrad.addColorStop(0, '#070f1e');
+    cardGrad.addColorStop(0.5, '#0b162c');
+    cardGrad.addColorStop(1, '#070f1e');
+    ctx.fillStyle = cardGrad;
+    ctx.fill();
+
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    // Metallic frame with neon orange accent
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    // Double metallic & neon border
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.28)';
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(cardX, cardY, cardW, cardH);
+    ctx.stroke();
 
-    // Left orange brand strip
+    // Top subtle specular highlight
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cardX + 1, cardY + 1);
+    ctx.lineTo(cardX + cardW - 14, cardY + 1);
+    ctx.stroke();
+
+    // Left neon orange brand strip
     ctx.fillStyle = '#f97316';
-    ctx.fillRect(cardX, cardY, 5, cardH);
+    ctx.fillRect(cardX, cardY + 2, 4, cardH - 14);
 
     // Top Header Banner
     ctx.fillStyle = 'rgba(249, 115, 22, 0.12)';
-    ctx.fillRect(cardX + 5, cardY, cardW - 5, 26);
+    ctx.fillRect(cardX + 6, cardY + 3, cardW - 22, 24);
     ctx.fillStyle = '#ffffff';
     ctx.font = '900 13px system-ui, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('HỘI KHỜ', cardX + 16, cardY + 18);
+    ctx.fillText('HỘI KHỜ', cardX + 16, cardY + 19);
 
     ctx.fillStyle = '#fb923c';
     ctx.font = 'bold 9px monospace';
-    ctx.fillText('SXP • SHIPPER TẬP SỰ', cardX + 90, cardY + 18);
+    ctx.fillText('SXP • SHIPPER TẬP SỰ', cardX + 90, cardY + 19);
 
-    // Level / Area marker
     ctx.fillStyle = '#94a3b8';
     ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText('MÀN 1: SÀI GÒN', cardX + cardW - 14, cardY + 18);
+    ctx.fillText('MÀN 1: SÀI GÒN', cardX + cardW - 22, cardY + 19);
+
+    // Left Column: Shipper Avatar Medallion
+    const avCenterX = cardX + 38;
+    const avCenterY = cardY + 74;
+    const avRadius = 24;
+
+    ctx.save();
+    // Avatar outer glow & border
+    ctx.beginPath();
+    ctx.arc(avCenterX, avCenterY, avRadius + 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#060d1a';
+    ctx.fill();
+    ctx.strokeStyle = '#f97316';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Inner avatar clip
+    ctx.beginPath();
+    ctx.arc(avCenterX, avCenterY, avRadius, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Avatar background
+    const avBg = ctx.createLinearGradient(avCenterX - avRadius, avCenterY - avRadius, avCenterX + avRadius, avCenterY + avRadius);
+    avBg.addColorStop(0, '#1e293b');
+    avBg.addColorStop(1, '#0f172a');
+    ctx.fillStyle = avBg;
+    ctx.fillRect(avCenterX - avRadius, avCenterY - avRadius, avRadius * 2, avRadius * 2);
+
+    // Shipper Khờ stylized portrait silhouette
+    // Orange Jacket Body
+    ctx.fillStyle = '#ea580c';
+    ctx.beginPath();
+    ctx.ellipse(avCenterX, avCenterY + 20, 19, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Jacket collar
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(avCenterX - 5, avCenterY + 10, 10, 8);
+    // Face
+    ctx.fillStyle = '#fcd34d';
+    ctx.beginPath();
+    ctx.arc(avCenterX, avCenterY + 3, 10, 0, Math.PI * 2);
+    ctx.fill();
+    // Delivery Cap
+    ctx.fillStyle = '#ea580c';
+    ctx.beginPath();
+    ctx.arc(avCenterX, avCenterY - 1, 11, Math.PI, 0);
+    ctx.fill();
+    // Cap visor
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(avCenterX - 11, avCenterY - 1, 22, 3);
+    // SXP badge on cap
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 6px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SXP', avCenterX, avCenterY - 3);
+
+    ctx.restore();
+
+    // Avatar Rank Pill
+    ctx.fillStyle = 'rgba(234, 88, 12, 0.9)';
+    ctx.fillRect(avCenterX - 16, avCenterY + 21, 32, 11);
+    ctx.strokeStyle = '#facc15';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(avCenterX - 16, avCenterY + 21, 32, 11);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('CẤP 1', avCenterX, avCenterY + 29);
+
+    // Middle Column: Gauges (HP, KIỆN, Q)
+    const barX = cardX + 78;
+    const barW = 224;
+    const barH = 17;
+    const hpY = cardY + 36;
+    const parcelY = hpY + 26;
+    const momY = parcelY + 26;
+
+    // Helper to draw beveled slot
+    const drawSlotBackground = (y: number) => {
+      ctx.fillStyle = '#07101e';
+      ctx.fillRect(barX, y, barW, barH);
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(barX, y, barW, barH);
+      // Subtle background grid hatch
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+      for (let gx = barX + 28; gx < barX + barW; gx += 28) {
+        ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx, y + barH); ctx.stroke();
+      }
+    };
 
     // --- HP BAR ---
-    const hpLabelX = cardX + 16;
-    const hpY = cardY + 36;
-    const barX = cardX + 52;
-    const barW = 210;
-    const barH = 18;
-
     ctx.textAlign = 'left';
     ctx.fillStyle = '#f87171';
     ctx.font = '900 11px system-ui, sans-serif';
-    ctx.fillText('HP', hpLabelX, hpY + 14);
+    ctx.fillText('HP', barX - 16, hpY + 13);
 
-    // Bar Slot Background
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(barX, hpY, barW, barH);
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(barX, hpY, barW, barH);
+    drawSlotBackground(hpY);
 
     const hpPct = Math.max(0, player.hp / player.maxHp);
     const hpGrad = ctx.createLinearGradient(barX, hpY, barX + barW, hpY);
     if (player.hp > 30) {
-      hpGrad.addColorStop(0, '#22c55e');
-      hpGrad.addColorStop(1, '#4ade80');
+      hpGrad.addColorStop(0, '#059669');
+      hpGrad.addColorStop(0.5, '#10b981');
+      hpGrad.addColorStop(1, '#34d399');
     } else {
-      hpGrad.addColorStop(0, '#dc2626');
+      hpGrad.addColorStop(0, '#991b1b');
+      hpGrad.addColorStop(0.5, '#dc2626');
       hpGrad.addColorStop(1, '#f87171');
     }
+    const currentHpW = Math.max(0, (barW - 4) * hpPct);
     ctx.fillStyle = hpGrad;
-    ctx.fillRect(barX + 2, hpY + 2, Math.max(0, (barW - 4) * hpPct), barH - 4);
+    ctx.fillRect(barX + 2, hpY + 2, currentHpW, barH - 4);
 
-    // Gloss line
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.fillRect(barX + 2, hpY + 2, Math.max(0, (barW - 4) * hpPct), 4);
+    // Specular highlight strip
+    if (currentHpW > 0) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.fillRect(barX + 2, hpY + 2, currentHpW, 4);
+    }
 
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 11px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(`${Math.round(player.hp)}/${player.maxHp}`, cardX + cardW - 14, hpY + 14);
+    ctx.fillText(`${Math.round(player.hp)}/${player.maxHp}`, barX + barW - 6, hpY + 13);
 
     // --- PARCEL INTEGRITY BAR ---
-    const parcelY = hpY + 26;
     const objective = ObjectiveSystem.getInstance();
     const parcelLabel = objective.parcelProfile?.shortLabel ?? 'KIỆN';
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#38bdf8';
-    ctx.font = '900 11px system-ui, sans-serif';
-    ctx.fillText('KIỆN', hpLabelX, parcelY + 14);
+    ctx.font = '900 10px system-ui, sans-serif';
+    ctx.fillText('KIỆN', barX - 18, parcelY + 13);
 
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(barX, parcelY, barW, barH);
-    ctx.strokeStyle = '#334155';
-    ctx.strokeRect(barX, parcelY, barW, barH);
+    drawSlotBackground(parcelY);
 
     const parcelPct = Math.max(0, parcelCondition / BALANCE.PARCEL_MAX_CONDITION);
     const parcelGrad = ctx.createLinearGradient(barX, parcelY, barX + barW, parcelY);
     if (parcelCondition > 70) {
       parcelGrad.addColorStop(0, '#0284c7');
-      parcelGrad.addColorStop(1, '#38bdf8');
+      parcelGrad.addColorStop(0.5, '#38bdf8');
+      parcelGrad.addColorStop(1, '#7dd3fc');
     } else if (parcelCondition > 30) {
-      parcelGrad.addColorStop(0, '#d97706');
-      parcelGrad.addColorStop(1, '#fbbf24');
+      parcelGrad.addColorStop(0, '#b45309');
+      parcelGrad.addColorStop(0.5, '#f59e0b');
+      parcelGrad.addColorStop(1, '#fde68a');
     } else {
-      parcelGrad.addColorStop(0, '#dc2626');
+      parcelGrad.addColorStop(0, '#991b1b');
+      parcelGrad.addColorStop(0.5, '#dc2626');
       parcelGrad.addColorStop(1, '#f87171');
     }
+    const currentParcelW = Math.max(0, (barW - 4) * parcelPct);
     ctx.fillStyle = parcelGrad;
-    ctx.fillRect(barX + 2, parcelY + 2, Math.max(0, (barW - 4) * parcelPct), barH - 4);
+    ctx.fillRect(barX + 2, parcelY + 2, currentParcelW, barH - 4);
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.fillRect(barX + 2, parcelY + 2, Math.max(0, (barW - 4) * parcelPct), 4);
+    if (currentParcelW > 0) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.fillRect(barX + 2, parcelY + 2, currentParcelW, 4);
+    }
 
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 11px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(`${Math.round(parcelCondition)}%`, cardX + cardW - 14, parcelY + 14);
+    ctx.fillText(`${Math.round(parcelCondition)}%`, barX + barW - 6, parcelY + 13);
 
     // --- MOMENTUM / ULTIMATE GAUGE (Q) ---
-    const momY = parcelY + 26;
     ctx.textAlign = 'left';
     ctx.fillStyle = '#fbbf24';
     ctx.font = '900 11px system-ui, sans-serif';
-    ctx.fillText('⚡ Q', hpLabelX, momY + 14);
+    ctx.fillText('⚡ Q', barX - 18, momY + 13);
 
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(barX, momY, barW, barH);
-    ctx.strokeStyle = '#334155';
-    ctx.strokeRect(barX, momY, barW, barH);
+    drawSlotBackground(momY);
 
     const momentumPct = Math.min(1, player.momentum / BALANCE.MOMENTUM_MAX);
     const isQReady = player.momentum >= BALANCE.ULTIMATE_COST;
     const momGrad = ctx.createLinearGradient(barX, momY, barX + barW, momY);
-    momGrad.addColorStop(0, '#ea580c');
-    momGrad.addColorStop(1, isQReady ? '#fbbf24' : '#f97316');
-    ctx.fillStyle = momGrad;
-    ctx.fillRect(barX + 2, momY + 2, Math.max(0, (barW - 4) * momentumPct), barH - 4);
+    momGrad.addColorStop(0, '#c2410c');
+    momGrad.addColorStop(0.5, isQReady ? '#fbbf24' : '#ea580c');
+    momGrad.addColorStop(1, isQReady ? '#fef08a' : '#f59e0b');
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.fillRect(barX + 2, momY + 2, Math.max(0, (barW - 4) * momentumPct), 4);
+    const currentMomW = Math.max(0, (barW - 4) * momentumPct);
+    ctx.fillStyle = momGrad;
+    ctx.fillRect(barX + 2, momY + 2, currentMomW, barH - 4);
+
+    if (currentMomW > 0) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.fillRect(barX + 2, momY + 2, currentMomW, 4);
+    }
 
     if (isQReady) {
       const pulse = 0.72 + Math.sin(performance.now() / 130) * 0.28;
       ctx.shadowColor = '#fbbf24';
-      ctx.shadowBlur = 10 * pulse;
+      ctx.shadowBlur = 12 * pulse;
       ctx.strokeStyle = '#fbbf24';
       ctx.lineWidth = 2;
       ctx.strokeRect(barX, momY, barW, barH);
-      ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 11px monospace';
+      ctx.fillStyle = '#fef08a';
+      ctx.font = '900 11px monospace';
       ctx.textAlign = 'right';
-      ctx.fillText('Q READY!', cardX + cardW - 14, momY + 14);
+      ctx.fillText('⚡ Q READY!', barX + barW - 6, momY + 13);
       ctx.shadowBlur = 0;
     } else {
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 11px monospace';
       ctx.textAlign = 'right';
-      ctx.fillText(`${Math.round(player.momentum)}%`, cardX + cardW - 14, momY + 14);
+      ctx.fillText(`${Math.round(player.momentum)}%`, barX + barW - 6, momY + 13);
     }
+
+    // Right Column: Dedicated Parcel Showcase Box
+    const parcelBoxX = cardX + cardW - 74;
+    const parcelBoxY = cardY + 34;
+    const parcelBoxW = 60;
+    const parcelBoxH = 78;
+
+    ctx.fillStyle = 'rgba(6, 14, 28, 0.9)';
+    ctx.fillRect(parcelBoxX, parcelBoxY, parcelBoxW, parcelBoxH);
+    ctx.strokeStyle = parcelCondition > 70 ? 'rgba(56, 189, 248, 0.5)' : 'rgba(249, 115, 22, 0.5)';
+    ctx.lineWidth = 1.2;
+    ctx.strokeRect(parcelBoxX, parcelBoxY, parcelBoxW, parcelBoxH);
+
+    // Title inside parcel box
+    ctx.fillStyle = parcelCondition > 70 ? '#38bdf8' : '#fb923c';
+    ctx.font = 'bold 8px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('KIỆN SXP', parcelBoxX + parcelBoxW / 2, parcelBoxY + 12);
+
+    // Star rating
+    const stars = parcelCondition >= 90 ? '★★★★★' : parcelCondition >= 70 ? '★★★★☆' : parcelCondition >= 40 ? '★★★☆☆' : '★★☆☆☆';
+    ctx.fillStyle = parcelCondition >= 70 ? '#facc15' : '#fb7185';
+    ctx.font = 'bold 9px system-ui';
+    ctx.fillText(stars, parcelBoxX + parcelBoxW / 2, parcelBoxY + parcelBoxH - 8);
 
     // Bonus Reward pill
     if (bonusReward > 0) {
