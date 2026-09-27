@@ -1129,12 +1129,60 @@ export class PlaceholderRenderer {
   public static renderProjectile(ctx: CanvasRenderingContext2D, camera: Camera, proj: Projectile): void {
     const pos = camera.worldToScreen(proj.x, proj.y);
 
-    // TAPE PROJECTILE: Beige / Yellowish rectangular strip
-    ctx.fillStyle = '#fde047';
-    ctx.fillRect(pos.x, pos.y, proj.width, proj.height);
-    ctx.strokeStyle = '#ca8a04';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(pos.x, pos.y, proj.width, proj.height);
+    if (proj.kind === 'TRAP') {
+      ctx.save();
+      // Floor Tape Trap: Cross hazard pattern with pulsing cyan/amber beacon
+      const pulse = 0.75 + Math.sin(performance.now() * 0.008) * 0.25;
+
+      // Base tape patch on the floor
+      ctx.fillStyle = 'rgba(250, 204, 21, 0.28)';
+      ctx.fillRect(pos.x, pos.y, proj.width, proj.height);
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(pos.x, pos.y, proj.width, proj.height);
+
+      // Warning hazard stripes across trap
+      ctx.fillStyle = 'rgba(249, 115, 22, 0.65)';
+      for (let tx = pos.x + 4; tx < pos.x + proj.width - 4; tx += 8) {
+        ctx.beginPath();
+        ctx.moveTo(tx, pos.y + proj.height);
+        ctx.lineTo(tx + 4, pos.y);
+        ctx.lineTo(tx + 6, pos.y);
+        ctx.lineTo(tx + 2, pos.y + proj.height);
+        ctx.fill();
+      }
+
+      // Glowing central beacon dot
+      ctx.fillStyle = `rgba(56, 189, 248, ${pulse})`;
+      ctx.beginPath();
+      ctx.arc(pos.x + proj.width / 2, pos.y + proj.height / 2, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Label floating right above the trap
+      ctx.fillStyle = '#fde047';
+      ctx.font = 'bold 8px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚡ BẪY KEO', pos.x + proj.width / 2, pos.y - 4);
+      ctx.restore();
+    } else {
+      // Normal tape projectile flying
+      ctx.save();
+      // Motion streak tail
+      const tailX = proj.facing === 'right' ? pos.x - 14 : pos.x + proj.width;
+      const trailGrad = ctx.createLinearGradient(pos.x, pos.y, tailX, pos.y);
+      trailGrad.addColorStop(0, 'rgba(254, 240, 138, 0.7)');
+      trailGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+      ctx.fillStyle = trailGrad;
+      ctx.fillRect(Math.min(pos.x, tailX), pos.y + 1, Math.abs(pos.x - tailX), proj.height - 2);
+
+      // Tape roll body
+      ctx.fillStyle = '#fde047';
+      ctx.fillRect(pos.x, pos.y, proj.width, proj.height);
+      ctx.strokeStyle = '#ca8a04';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(pos.x, pos.y, proj.width, proj.height);
+      ctx.restore();
+    }
   }
 
   public static renderHUD(
@@ -1238,7 +1286,7 @@ export class PlaceholderRenderer {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         // Precise crop centered on face & cap from 260x260 image
-        ctx.drawImage(portrait, 45, 0, 200, 215, portX + 2, portY + 2, portW - 4, portH - 4);
+        ctx.drawImage(portrait, 90, 0, 145, 145, portX + 2, portY + 2, portW - 4, portH - 4);
         ctx.restore();
         renderedSprite = true;
       } else {

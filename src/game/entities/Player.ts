@@ -86,6 +86,8 @@ export class Player extends Entity {
   public onFootstep: (() => void) | null = null;
   public onJumpStarted: (() => void) | null = null;
   public onLanded: (() => void) | null = null;
+  public onAirSlamLanded: (() => void) | null = null;
+  public onTrapPlaced: ((trap: Projectile) => void) | null = null;
   private footstepTimer: number = 0.1;
   private slipTimer: number = 0;
 
@@ -280,7 +282,7 @@ export class Player extends Entity {
       return;
     }
 
-    // Projectile Tape (K) - restricted by tape ammo charges
+    // Projectile Tape / Floor Trap (K) - restricted by tape ammo charges
     if (
       input.isJustPressed('projectile') &&
       this.projectileCooldownTimer <= 0 &&
@@ -289,7 +291,11 @@ export class Player extends Entity {
       this.actionState !== 'ATTACK'
     ) {
       this.landingTimer = 0;
-      this.shootProjectile();
+      if (input.isDown('uiDown')) {
+        this.placeTapeTrap();
+      } else {
+        this.shootProjectile();
+      }
     }
 
     // Ultimate (Q) - explosive courier surge
@@ -357,6 +363,20 @@ export class Player extends Entity {
     const projectile = new Projectile(spawnX, spawnY, this.facing, this.id);
     if (this.onShootProjectile) {
       this.onShootProjectile(projectile);
+    }
+  }
+
+  private placeTapeTrap(): void {
+    this.tapeCharges = Math.max(0, this.tapeCharges - 1);
+    this.projectileCooldownTimer = BALANCE.TAPE_COOLDOWN;
+    const spawnX = this.x + this.width / 2 - 20;
+    const spawnY = this.y + this.height - 14;
+
+    const trap = new Projectile(spawnX, spawnY, this.facing, this.id, 'TRAP');
+    if (this.onTrapPlaced) {
+      this.onTrapPlaced(trap);
+    } else if (this.onShootProjectile) {
+      this.onShootProjectile(trap);
     }
   }
 
@@ -461,6 +481,7 @@ export class Player extends Entity {
         this.attackPhaseTimer = 0.08;
         this.landingTimer = 0.08;
         this.onLanded?.();
+        this.onAirSlamLanded?.();
       } else if (this.locomotionState === 'FALL' && this.actionState === 'NONE') {
         this.landingTimer = 0.08;
         this.onLanded?.();

@@ -13,7 +13,7 @@ export class EquipmentVisualRenderer {
     let image = this.images.get(id);
     if (!image) {
       image = new Image();
-      const filename = id === 'reflective_backpack' || id === 'reinforced_parcel' ? 'reflective_badge'
+      const filename = id === 'reflective_backpack' || id === 'reinforced_parcel' ? 'reflective_backpack'
         : id === 'agile_dodge' ? 'dep_to_ong'
         : id === 'scanner_pro' || id === 'wide_scan' || id === 'precision_scan' ? 'scanner_pro'
         : id === 'sticky_tape' || id === 'tape_range' || id === 'tape_impact' ? 'sticky_tape'
@@ -39,7 +39,7 @@ export class EquipmentVisualRenderer {
     const baseId: EquipmentImageId = id === 'agile_dodge' ? 'agile_dodge'
       : branch === 'J' ? 'scanner_pro'
       : branch === 'K' ? 'sticky_tape'
-      : branch === 'L' ? 'reflective_badge'
+      : branch === 'L' ? 'reflective_backpack'
       : 'express_core';
     const image = this.getImage(baseId);
 

@@ -11,23 +11,40 @@ export class Projectile extends Entity {
   private hitboxId: string;
   public readonly appliesStickySlow: boolean;
   public readonly visualUpgrade: 'BASE' | 'STICKY' | 'RANGE' | 'IMPACT';
+  public readonly kind: 'PROJECTILE' | 'TRAP';
 
-  constructor(x: number, y: number, direction: 'left' | 'right', ownerId: string) {
-    super(`proj_${Date.now()}_${Math.random()}`, x, y, BALANCE.TAPE_WIDTH, BALANCE.TAPE_HEIGHT);
+  constructor(
+    x: number,
+    y: number,
+    direction: 'left' | 'right',
+    ownerId: string,
+    kind: 'PROJECTILE' | 'TRAP' = 'PROJECTILE'
+  ) {
+    const width = kind === 'TRAP' ? 40 : BALANCE.TAPE_WIDTH;
+    const height = kind === 'TRAP' ? 14 : BALANCE.TAPE_HEIGHT;
+    super(`proj_${Date.now()}_${Math.random()}`, x, y, width, height);
+    this.kind = kind;
     this.facing = direction;
     this.ownerId = ownerId;
     const upgrades = UpgradeSystem.getInstance();
-    this.vx = (direction === 'right' ? BALANCE.TAPE_SPEED : -BALANCE.TAPE_SPEED) * upgrades.getTapeSpeedMultiplier();
-    this.vy = 0;
-    this.lifetime *= upgrades.getTapeLifetimeMultiplier();
-    this.damage = Math.round(this.damage * upgrades.getTapeDamageMultiplier());
+    if (kind === 'TRAP') {
+      this.vx = 0;
+      this.vy = 0;
+      this.lifetime = 12.0; // Floor trap stays active for 12 seconds
+      this.damage = Math.round(BALANCE.TAPE_DAMAGE * 1.5);
+    } else {
+      this.vx = (direction === 'right' ? BALANCE.TAPE_SPEED : -BALANCE.TAPE_SPEED) * upgrades.getTapeSpeedMultiplier();
+      this.vy = 0;
+      this.lifetime *= upgrades.getTapeLifetimeMultiplier();
+      this.damage = Math.round(this.damage * upgrades.getTapeDamageMultiplier());
+    }
     this.hitboxId = `hb_${this.id}`;
-    this.appliesStickySlow = upgrades.has('sticky_tape');
+    this.appliesStickySlow = true;
     this.visualUpgrade = upgrades.isEquipped('tape_range')
       ? 'RANGE'
       : upgrades.isEquipped('tape_impact')
       ? 'IMPACT'
-      : this.appliesStickySlow
+      : upgrades.has('sticky_tape')
       ? 'STICKY'
       : 'BASE';
   }
@@ -61,6 +78,8 @@ export class Projectile extends Entity {
   }
 
   public checkSolidCollision(worldWidth: number, platforms: Rect[]): boolean {
+    if (this.kind === 'TRAP') return false; // Floor traps rest on platforms
+
     if (this.x < 0 || this.x + this.width > worldWidth) {
       this.isExpired = true;
       this.isAlive = false;

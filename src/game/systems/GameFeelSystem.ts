@@ -138,6 +138,23 @@ export class GameFeelSystem {
     this.spawnImpact(x, y, 5, '#86EFAC');
   }
 
+  public triggerPerfectDodge(x: number, y: number): void {
+    this.audio?.play('perfect_dodge');
+    this.hitStopRemaining = Math.max(this.hitStopRemaining, 0.12);
+    this.parcelShieldPulses.push({ x, y, life: 0.28, maxLife: 0.28 });
+    this.shakeRequest = { intensity: 2, duration: 0.14 };
+    this.spawnImpact(x, y, 10, '#38BDF8');
+    this.addComicText('NÉ CHUẨN! ⚡', x, y - 56, '#38BDF8', 16);
+  }
+
+  public triggerAirSlam(x: number, y: number): void {
+    this.audio?.play('hit_heavy');
+    this.hitStopRemaining = Math.max(this.hitStopRemaining, 0.08);
+    this.shakeRequest = { intensity: 4, duration: 0.22 };
+    this.spawnImpact(x, y, 16, '#F97316');
+    this.addComicText('RẦM! 💥', x, y - 48, '#F87171', 18);
+  }
+
   public triggerParcelImpact(x: number, y: number, rearHit: boolean): void {
     this.audio?.play('parcel_hit');
     this.spawnImpact(x, y, rearHit ? 10 : 6, rearHit ? '#FB7185' : '#D6A35F');
@@ -156,13 +173,6 @@ export class GameFeelSystem {
     } else if (type === 'PARTS') {
       this.addComicText('+LINH KIỆN SXP! ⚙️', x, y - 24, '#A78BFA', 16);
     }
-  }
-
-  public triggerPerfectDodge(x: number, y: number): void {
-    this.audio?.play('perfect_dodge');
-    this.hitStopRemaining = Math.max(this.hitStopRemaining, 0.045);
-    this.shakeRequest = { intensity: 2.5, duration: 0.12 };
-    this.spawnImpact(x, y, 12, '#67E8F9');
   }
 
   public consumeShakeRequest(): { intensity: number; duration: number } | null {

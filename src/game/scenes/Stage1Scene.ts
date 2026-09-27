@@ -130,6 +130,29 @@ export class Stage1Scene implements Scene {
     };
     this.player.onJumpStarted = () => this.audio.play('jump');
     this.player.onLanded = () => this.audio.play('land');
+    this.player.onAirSlamLanded = () => {
+      const slamX = this.player.x + this.player.width / 2;
+      const slamY = this.player.y + this.player.height;
+      this.gameFeel.triggerAirSlam(slamX, slamY);
+
+      // AoE damage & knockdown to nearby enemies
+      const slamRadius = 110;
+      const allEnemies: (Dog | Rival | Thug | BossDog)[] = [
+        ...this.dogs,
+        ...this.rivals,
+        ...this.thugs,
+        ...this.bossDogs,
+      ];
+      for (const enemy of allEnemies) {
+        if (!enemy.isAlive) continue;
+        const ex = enemy.x + enemy.width / 2;
+        const ey = enemy.y + enemy.height / 2;
+        if (Math.abs(ex - slamX) <= slamRadius && Math.abs(ey - slamY) <= 60) {
+          const knockDir = ex >= slamX ? 1 : -1;
+          enemy.takeDamage(35, knockDir * 240, 150, slamX);
+        }
+      }
+    };
     this.player.onUltimateActivated = () => {
       this.audio.play('ultimate_charge');
       this.gameFeel.triggerUltimateActivation(
@@ -838,49 +861,62 @@ export class Stage1Scene implements Scene {
       if (hits.length > 0) proj.expire();
     }
 
+    const tryPerfectDodge = (hitbox: Hitbox, onEvaded?: () => void): boolean => {
+      if (this.player.actionState === 'DODGE') {
+        if (CollisionSystem.checkAABB(hitbox, this.player.getRect())) {
+          if (!this.perfectDodgeHitboxIds.has(hitbox.id)) {
+            this.perfectDodgeHitboxIds.add(hitbox.id);
+            this.combatSystem.resolveWithoutDamage(hitbox.id, this.player.id);
+            this.player.addMomentum(25);
+            this.player.tapeCharges = Math.min(this.player.maxTapeCharges, this.player.tapeCharges + 1);
+            this.gameFeel.triggerPerfectDodge(
+              this.player.x + this.player.width / 2,
+              this.player.y + this.player.height / 2
+            );
+            onEvaded?.();
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
     for (const dog of this.dogs) {
       const dogHitbox = dog.getActiveHitbox();
       if (dogHitbox) {
-        this.combatSystem.evaluateHitbox(dogHitbox, [playerTarget]);
+        if (!tryPerfectDodge(dogHitbox)) {
+          this.combatSystem.evaluateHitbox(dogHitbox, [playerTarget]);
+        }
       }
     }
 
     for (const rival of this.rivals) {
       const rivalHitbox = rival.getActiveHitbox();
       if (rivalHitbox) {
-        this.combatSystem.evaluateHitbox(rivalHitbox, [playerTarget]);
+        if (!tryPerfectDodge(rivalHitbox)) {
+          this.combatSystem.evaluateHitbox(rivalHitbox, [playerTarget]);
+        }
       }
     }
 
     for (const thug of this.thugs) {
       const thugHitbox = thug.getActiveHitbox();
       if (thugHitbox) {
-        this.combatSystem.evaluateHitbox(thugHitbox, [playerTarget]);
+        if (!tryPerfectDodge(thugHitbox)) {
+          this.combatSystem.evaluateHitbox(thugHitbox, [playerTarget]);
+        }
       }
     }
 
     for (const boss of this.bossDogs) {
       const bossHitbox = boss.getActiveHitbox();
       if (bossHitbox) {
-        if (this.player.actionState === 'DODGE') {
-          if (CollisionSystem.checkAABB(bossHitbox, this.player.getRect())) {
-            if (!this.perfectDodgeHitboxIds.has(bossHitbox.id)) {
-              this.perfectDodgeHitboxIds.add(bossHitbox.id);
-              if (boss.registerPerfectDodge()) {
-                // Consume this concrete attack instance. Without this record,
-                // the same dash can hit on the first frame after DODGE ends.
-                this.combatSystem.resolveWithoutDamage(bossHitbox.id, this.player.id);
-                this.player.addMomentum(20);
-                this.audio.play('perfect_dodge');
-                this.gameFeel.triggerParcelShield(
-                  this.player.x + this.player.width / 2,
-                  this.player.y + this.player.height / 2
-                );
-              }
-            }
-          }
+        const dodged = tryPerfectDodge(bossHitbox, () => {
+          boss.registerPerfectDodge();
+        });
+        if (!dodged) {
+          this.combatSystem.evaluateHitbox(bossHitbox, [playerTarget]);
         }
-        this.combatSystem.evaluateHitbox(bossHitbox, [playerTarget]);
       }
     }
 
