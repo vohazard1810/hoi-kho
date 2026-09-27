@@ -628,75 +628,200 @@ export class PlaceholderRenderer {
     if (!bossDog.isAlive && bossDog.state === 'KO') return;
 
     ctx.save();
-    const barW = 420;
-    const barH = 14;
-    const barX = (1280 - barW) / 2;
-    const barY = 58;
+    const boxX = 420;
+    const boxY = 16;
+    const boxW = 520;
+    const boxH = 60;
     const dangerMaxed = bossDog.antiSpamLevel >= 6;
     const dangerNear = bossDog.antiSpamLevel >= 4;
+    const isPhase2 = bossDog.phase === 2;
 
-    // Compact Background Card
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-    ctx.fillRect(barX - 10, barY - 24, barW + 20, 68);
-    ctx.strokeStyle = dangerMaxed ? '#ef4444' : bossDog.phase === 2 ? '#fb7185' : '#fb923c';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(barX - 10, barY - 24, barW + 20, 68);
+    // 1. Sleek Chamfered Cyber Chassis
+    ctx.shadowColor = dangerMaxed ? 'rgba(239, 68, 68, 0.65)' : isPhase2 ? 'rgba(244, 63, 94, 0.45)' : 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = dangerMaxed ? 14 : isPhase2 ? 10 : 8;
 
-    // Title
-    ctx.fillStyle = bossDog.phase === 2 ? '#fb7185' : '#fdba74';
-    ctx.font = 'bold 12px system-ui, sans-serif';
+    const bgGrad = ctx.createLinearGradient(boxX, boxY, boxX, boxY + boxH);
+    bgGrad.addColorStop(0, 'rgba(15, 23, 42, 0.96)');
+    bgGrad.addColorStop(1, 'rgba(6, 11, 22, 0.98)');
+    ctx.fillStyle = bgGrad;
+
+    ctx.beginPath();
+    ctx.moveTo(boxX, boxY);
+    ctx.lineTo(boxX + boxW - 12, boxY);
+    ctx.lineTo(boxX + boxW, boxY + 12);
+    ctx.lineTo(boxX + boxW, boxY + boxH);
+    ctx.lineTo(boxX + 12, boxY + boxH);
+    ctx.lineTo(boxX, boxY + boxH - 12);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+
+    // Border
+    const borderPulse = isPhase2 ? 0.75 + Math.sin(performance.now() / 110) * 0.25 : 1;
+    ctx.strokeStyle = dangerMaxed
+      ? '#ef4444'
+      : isPhase2
+      ? `rgba(244, 63, 94, ${borderPulse})`
+      : 'rgba(249, 115, 22, 0.55)';
+    ctx.lineWidth = isPhase2 || dangerMaxed ? 1.8 : 1.2;
+    ctx.stroke();
+
+    // Left fiery vertical accent bar
+    ctx.fillStyle = dangerMaxed ? '#ef4444' : isPhase2 ? '#f43f5e' : '#f97316';
+    ctx.fillRect(boxX, boxY + 2, 4, boxH - 14);
+
+    // 2. Row 1: Header (Boss Name & Tactical Status)
+    const headerY = boxY + 17;
     ctx.textAlign = 'left';
-    ctx.fillText(bossDog.isCounterExposed ? 'SƠ HỞ — PHẢN CÔNG NGAY!' : dangerMaxed ? 'NỘ PHẢN ĐÒN ĐÃ ĐẦY — NÉ NGAY!' : dangerNear ? 'NỘ PHẢN ĐÒN SẮP ĐẦY' : bossDog.pressureLevel >= 3 ? 'CHÓ ĐẠI CA • LÌ ĐÒN — CHỜ SƠ HỞ!' : bossDog.damageMultiplier < 1 ? 'CHÓ ĐẠI CA • GIÁP — NÉ ĐÒN!' : bossDog.phase === 2 ? 'CHÓ ĐẠI CA • NỔI GIẬN' : 'CHÓ ĐẠI CA • CHỦ HẺM', barX, barY - 8);
+    ctx.font = '900 13px system-ui, sans-serif';
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillText('👹 TRÙM: CHÓ ĐẠI CA', boxX + 16, headerY);
 
-    // HP Text
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 11px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(`${Math.round(bossDog.hp)} / ${bossDog.maxHp}`, barX + barW, barY - 8);
+    // Status Pill
+    const tagX = boxX + 168;
+    let tagText = 'THỐNG LĨNH HẺM';
+    let tagColor = '#fdba74';
+    let tagBg = 'rgba(249, 115, 22, 0.16)';
+    let tagBorder = 'rgba(249, 115, 22, 0.4)';
 
-    // HP Bar Track
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(barX, barY, barW, barH);
+    if (bossDog.isCounterExposed) {
+      tagText = '⚡ SƠ HỞ — PHẢN CÔNG NGAY!';
+      tagColor = '#86efac';
+      tagBg = 'rgba(34, 197, 94, 0.2)';
+      tagBorder = '#22c55e';
+    } else if (dangerMaxed) {
+      tagText = '⚠️ NỘ ĐÃ ĐẦY — NÉ NGAY [L]!';
+      tagColor = '#fca5a5';
+      tagBg = 'rgba(239, 68, 68, 0.25)';
+      tagBorder = '#ef4444';
+    } else if (isPhase2) {
+      tagText = '🔥 CUỒNG BẠO • PHASE 2';
+      tagColor = '#fca5a5';
+      tagBg = 'rgba(225, 29, 72, 0.22)';
+      tagBorder = '#f43f5e';
+    } else if (bossDog.damageMultiplier < 1) {
+      tagText = '🛡️ THỦ THẾ — NÉ ĐÒN!';
+      tagColor = '#fde68a';
+      tagBg = 'rgba(217, 119, 6, 0.2)';
+      tagBorder = '#f59e0b';
+    }
 
-    // HP Bar Fill
-    const hpPct = Math.max(0, bossDog.hp / bossDog.maxHp);
-    ctx.fillStyle = bossDog.phase === 2 ? '#fb7185' : '#fb923c';
-    ctx.fillRect(barX, barY, barW * hpPct, barH);
-
-    // Six compact fangs communicate danger; this is not a damage-progress bar.
-    const pipGap = 9;
-    const pipW = 15;
-    const pipH = 11;
-    const pipY = barY + barH + 8;
-    ctx.textAlign = 'left';
-    ctx.fillStyle = dangerMaxed ? '#fecaca' : '#94a3b8';
     ctx.font = 'bold 9px monospace';
-    ctx.fillText('NỘ PHẢN ĐÒN', barX, pipY + 9);
+    const tagW = ctx.measureText(tagText).width + 12;
+    ctx.fillStyle = tagBg;
+    ctx.fillRect(tagX, headerY - 11, tagW, 14);
+    ctx.strokeStyle = tagBorder;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(tagX, headerY - 11, tagW, 14);
+    ctx.fillStyle = tagColor;
+    ctx.fillText(tagText, tagX + 6, headerY);
+
+    // Numerical HP & Percentage (Top Right)
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(`${Math.round(bossDog.hp)}/${bossDog.maxHp}`, boxX + boxW - 46, headerY);
+
+    const hpPct = Math.max(0, bossDog.hp / bossDog.maxHp);
+    ctx.fillStyle = isPhase2 ? '#f87171' : '#fbbf24';
+    ctx.font = '900 11px monospace';
+    ctx.fillText(`${Math.round(hpPct * 100)}%`, boxX + boxW - 14, headerY);
+
+    // 3. Row 2: Sleek Health Gauge
+    const barX = boxX + 16;
+    const barY = boxY + 23;
+    const barW = boxW - 32;
+    const barH = 11;
+
+    // Track
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(barX, barY, barW, barH);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX, barY, barW, barH);
+
+    // Fill
+    const fillW = Math.max(0, barW * hpPct);
+    if (fillW > 0) {
+      const hpGrad = ctx.createLinearGradient(barX, barY, barX + fillW, barY);
+      if (isPhase2) {
+        hpGrad.addColorStop(0, '#991b1b');
+        hpGrad.addColorStop(0.5, '#dc2626');
+        hpGrad.addColorStop(1, '#fca5a5');
+      } else {
+        hpGrad.addColorStop(0, '#c2410c');
+        hpGrad.addColorStop(0.5, '#f97316');
+        hpGrad.addColorStop(1, '#fde047');
+      }
+      ctx.fillStyle = hpGrad;
+      ctx.fillRect(barX, barY, fillW, barH);
+
+      // Top specular sheen
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+      ctx.fillRect(barX, barY, fillW, 3);
+    }
+
+    // Notches at 25%, 50%, 75%
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    for (const pct of [0.25, 0.5, 0.75]) {
+      ctx.fillRect(barX + barW * pct - 0.5, barY, 1, barH);
+    }
+
+    // 4. Row 3: Tactical Rage Energy Pips ("NỘ PHẢN ĐÒN")
+    const pipRowY = barY + barH + 7;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = dangerMaxed ? '#ef4444' : dangerNear ? '#fb923c' : '#94a3b8';
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText('NỘ PHẢN ĐÒN', barX, pipRowY + 7);
+
+    const pipStartX = barX + 88;
+    const pipW = 14;
+    const pipH = 8;
+    const pipGap = 7;
+
     for (let i = 0; i < 6; i++) {
-      const px = barX + 112 + i * (pipW + pipGap);
+      const px = pipStartX + i * (pipW + pipGap);
       const active = i < bossDog.antiSpamLevel;
       const isMax = active && dangerMaxed;
-      ctx.fillStyle = isMax ? '#ef4444' : active ? '#f97316' : '#334155';
+
       ctx.beginPath();
-      ctx.moveTo(px, pipY);
-      ctx.lineTo(px + pipW, pipY);
-      ctx.lineTo(px + pipW / 2, pipY + pipH);
+      ctx.moveTo(px, pipRowY + pipH / 2);
+      ctx.lineTo(px + pipW / 2, pipRowY);
+      ctx.lineTo(px + pipW, pipRowY + pipH / 2);
+      ctx.lineTo(px + pipW / 2, pipRowY + pipH);
       ctx.closePath();
-      ctx.fill();
+
       if (isMax) {
-        ctx.save();
-        ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 8;
+        ctx.fillStyle = '#ef4444';
+        ctx.fill();
         ctx.strokeStyle = '#fca5a5';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      } else if (active) {
+        ctx.fillStyle = '#f97316';
+        ctx.fill();
+        ctx.strokeStyle = '#fde047';
         ctx.lineWidth = 1;
         ctx.stroke();
-        ctx.restore();
+      } else {
+        ctx.fillStyle = 'rgba(30, 41, 59, 0.6)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(71, 85, 105, 0.4)';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
       }
     }
+
+    // Warning cue on right side of pip row
     ctx.textAlign = 'right';
-    ctx.fillStyle = dangerMaxed ? '#fca5a5' : '#64748b';
     ctx.font = 'bold 9px monospace';
-    ctx.fillText(dangerMaxed ? 'PHẢN ĐÒN SẮP TỚI' : 'CÀNG ĐẦY CÀNG NGUY HIỂM', barX + barW, pipY + 9);
+    ctx.fillStyle = dangerMaxed ? '#fca5a5' : dangerNear ? '#fed7aa' : '#64748b';
+    ctx.fillText(
+      dangerMaxed ? '⚡ PHẢN ĐÒN SẮP TỚI!' : dangerNear ? 'CÀNG ĐÁNH DỒN CÀNG NGUY HIỂM' : 'DỒN ĐÒN LIÊN TỤC SẼ KÍCH NỘ',
+      barX + barW,
+      pipRowY + 7
+    );
 
     ctx.restore();
   }
@@ -1018,7 +1143,8 @@ export class PlaceholderRenderer {
     parcelCondition: number,
     bonusReward: number,
     nearbyPrompt: string | null,
-    objectiveName: string
+    objectiveName: string,
+    activeBoss?: BossDog
   ): void {
     ctx.save();
 
@@ -1322,24 +1448,28 @@ export class PlaceholderRenderer {
     }
 
     // ==========================================
-    // 2. DISPATCH SLIP (Top Center)
+    // 2. DISPATCH SLIP / BOSS HEALTH BAR (Top Center)
     // ==========================================
-    ctx.fillStyle = 'rgba(7, 15, 29, 0.94)';
-    ctx.fillRect(420, 16, 520, 60);
-    ctx.fillStyle = '#fb923c';
-    ctx.fillRect(420, 16, 4, 60);
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(420, 16, 520, 60);
+    if (activeBoss && activeBoss.isAlive && activeBoss.state !== 'KO') {
+      this.renderBossBar(ctx, activeBoss);
+    } else {
+      ctx.fillStyle = 'rgba(7, 15, 29, 0.94)';
+      ctx.fillRect(420, 16, 520, 60);
+      ctx.fillStyle = '#fb923c';
+      ctx.fillRect(420, 16, 4, 60);
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(420, 16, 520, 60);
 
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#fb923c';
-    ctx.font = 'bold 11px system-ui';
-    ctx.fillText('📦 ĐƠN ĐANG GIAO (SXP-8924)', 438, 35);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#fb923c';
+      ctx.font = 'bold 11px system-ui';
+      ctx.fillText('📦 ĐƠN ĐANG GIAO (SXP-8924)', 438, 35);
 
-    ctx.fillStyle = '#f8fafc';
-    ctx.font = 'bold 14px system-ui, sans-serif';
-    ctx.fillText(objectiveName.replace(/^MỤC TIÊU:\s*/, ''), 438, 59, 484);
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 14px system-ui, sans-serif';
+      ctx.fillText(objectiveName.replace(/^MỤC TIÊU:\s*/, ''), 438, 59, 484);
+    }
 
     const damageAge = (performance.now() - objective.parcelDamageAt) / 1000;
     const repairAge = (performance.now() - objective.parcelRepairAt) / 1000;

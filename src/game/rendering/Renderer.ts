@@ -1380,18 +1380,19 @@ export class Renderer {
     }
     this.ctx.restore();
 
-    // Floating Vietnamese Comic Action Hit Text (BỐP, CHÁT, HUỲNH, HỎA TỐC)
+    // Floating Vietnamese Comic Action Hit Text (CHÁT, HUỲNH, HỎA TỐC)
     this.ctx.save();
     for (const hit of gameFeel.comicTexts) {
       const screen = camera.worldToScreen(hit.x, hit.y);
       const progress = hit.life / hit.maxLife;
-      this.ctx.globalAlpha = Math.min(1, progress * 1.5);
-      this.ctx.font = `900 ${hit.size}px system-ui, sans-serif`;
+      this.ctx.globalAlpha = Math.min(1, progress * 1.6);
+      this.ctx.font = `italic 900 ${hit.size}px monospace, system-ui, sans-serif`;
       this.ctx.textAlign = 'center';
 
-      // Drop shadow for punchy pop
-      this.ctx.fillStyle = '#020617';
-      this.ctx.fillText(hit.text, screen.x + 2, screen.y + 2);
+      // Clean crisp dark stroke outline instead of clumsy offset shadow
+      this.ctx.strokeStyle = 'rgba(15, 23, 42, 0.9)';
+      this.ctx.lineWidth = 2.5;
+      this.ctx.strokeText(hit.text, screen.x, screen.y);
 
       this.ctx.fillStyle = hit.color;
       this.ctx.fillText(hit.text, screen.x, screen.y);
@@ -1465,53 +1466,73 @@ export class Renderer {
     }
     this.ctx.restore();
 
-    // Arcade Combo Counter (Right Side)
+    // Sleek Arcade Combo Counter (Top Right, docked below Debt display)
     if (gameFeel.comboStreak >= 2) {
       this.ctx.save();
-      const comboX = 1240;
-      const comboY = 220;
-      const pulse = 1 + Math.sin(performance.now() / 90) * 0.08;
+      const comboW = 152;
+      const comboH = 30;
+      const comboX = 1250 - comboW;
+      const comboY = 84;
+      const pulse = 1 + Math.min(0.04, Math.sin(performance.now() / 140) * 0.03);
 
-      this.ctx.translate(comboX, comboY);
+      this.ctx.translate(comboX + comboW, comboY + comboH / 2);
       this.ctx.scale(pulse, pulse);
+      this.ctx.translate(-(comboX + comboW), -(comboY + comboH / 2));
 
-      this.ctx.fillStyle = 'rgba(7, 15, 29, 0.9)';
-      this.ctx.fillRect(-190, -22, 190, 44);
-      this.ctx.strokeStyle = '#f59e0b';
-      this.ctx.lineWidth = 2;
-      this.ctx.strokeRect(-190, -22, 190, 44);
+      // Tier styling
+      let tierColor = '#fde047';
+      let tierText = 'LIÊN HOÀN';
+      if (gameFeel.comboStreak >= 10) {
+        tierColor = '#f87171';
+        tierText = 'BÃO SHIPPER';
+      } else if (gameFeel.comboStreak >= 5) {
+        tierColor = '#fb923c';
+        tierText = 'HỎA TỐC';
+      }
 
-      this.ctx.font = '900 22px system-ui, sans-serif';
+      // Compact chassis
+      this.ctx.fillStyle = 'rgba(9, 13, 22, 0.9)';
+      this.ctx.fillRect(comboX, comboY, comboW, comboH);
+      this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(comboX, comboY, comboW, comboH);
+
+      // Left Accent Strip in tier color
+      this.ctx.fillStyle = tierColor;
+      this.ctx.fillRect(comboX, comboY, 3, comboH);
+
+      // Hits text (Left aligned inside badge)
+      this.ctx.font = '900 13px monospace';
+      this.ctx.textAlign = 'left';
+      this.ctx.fillStyle = tierColor;
+      this.ctx.fillText(`⚡ ${gameFeel.comboStreak} HITS`, comboX + 10, comboY + 20);
+
+      // Tier label (Right aligned inside badge)
+      this.ctx.font = 'bold 9px monospace';
       this.ctx.textAlign = 'right';
-      this.ctx.fillStyle = '#fbbf24';
-      this.ctx.shadowColor = '#f59e0b';
-      this.ctx.shadowBlur = 10;
-      this.ctx.fillText(`🔥 ${gameFeel.comboStreak} HITS!`, -12, 3);
-      this.ctx.shadowBlur = 0;
+      this.ctx.fillStyle = '#94a3b8';
+      this.ctx.fillText(tierText, comboX + comboW - 10, comboY + 19);
 
-      this.ctx.font = 'bold 11px system-ui';
-      this.ctx.fillStyle = '#f8fafc';
-      this.ctx.fillText('COMBO SHIPPER', -12, 18);
       this.ctx.restore();
     }
 
-    // 6. Boss Bar if Boss is active in Zone E
+    // 6. Boss Bar & HUD
     const activeBoss = bossDogs.find((b) => b.isAlive);
-    if (activeBoss) {
-      PlaceholderRenderer.renderBossBar(this.ctx, activeBoss);
-    }
 
-    // 7. HUD
+    // 7. HUD (integrates Boss Bar directly into the top-center dispatch slot when active)
     PlaceholderRenderer.renderHUD(
       this.ctx,
       player,
       parcelCondition,
       bonusReward,
       nearbyPrompt,
-      objectiveName
+      objectiveName,
+      activeBoss
     );
     EquipmentVisualRenderer.renderHud(this.ctx, upgradeSnapshot, player);
-    this.v19Visuals.renderParcel(this.ctx, parcelCondition, 882, 22, 48, 48);
+    if (!activeBoss || !activeBoss.isAlive || activeBoss.state === 'KO') {
+      this.v19Visuals.renderParcel(this.ctx, parcelCondition, 882, 22, 48, 48);
+    }
 
     // 8. Debug Overlay (only if DEV_MODE = true)
     if (currentEncounterName !== this.encounterLabel) {

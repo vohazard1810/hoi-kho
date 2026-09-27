@@ -95,11 +95,10 @@ export class GameFeelSystem {
     this.shakeRequest = { intensity: profile.shake, duration: profile.duration };
     this.spawnImpact(x, y, profile.particles, combo === 'ULTIMATE' ? '#FFE36A' : '#FF8A2A');
 
-    // Spawn floating Vietnamese comic action text
-    if (combo === 'J1') this.addComicText('BỐP!', x, y - 24, '#FEF08A', 16);
-    else if (combo === 'J2') this.addComicText('CHÁT!', x, y - 28, '#FDBA74', 19);
-    else if (combo === 'J3') this.addComicText('HUỲNH!', x, y - 34, '#F87171', 23);
-    else if (combo === 'ULTIMATE') this.addComicText('HỎA TỐC! 💥', x, y - 40, '#FBBF24', 28);
+    // Spawn floating Vietnamese comic action text (only on impactful combo milestones, scaled gracefully)
+    if (combo === 'J2' && this.comboStreak >= 3) this.addComicText('CHÁT!', x, y - 48, '#FDBA74', 12);
+    else if (combo === 'J3') this.addComicText('HUỲNH! 💥', x, y - 52, '#F87171', 15);
+    else if (combo === 'ULTIMATE') this.addComicText('HỎA TỐC! ⚡', x, y - 56, '#FBBF24', 18);
   }
 
   private addComicText(text: string, x: number, y: number, color: string, size: number): void {
