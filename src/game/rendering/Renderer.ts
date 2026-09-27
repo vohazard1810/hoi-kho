@@ -1077,12 +1077,24 @@ export class Renderer {
       this.ctx.textAlign = 'left';
       this.ctx.fillStyle = locked ? '#64748b' : isSelected ? '#ffffff' : '#f8fafc';
       this.ctx.font = '900 13px system-ui, sans-serif';
+      const nameW = this.ctx.measureText(definition.name).width;
       this.ctx.fillText(definition.name, cardX + 70, cardY + 25);
 
       if (definition.variant) {
-        this.ctx.fillStyle = branchColor;
-        this.ctx.font = 'bold 9px monospace';
-        this.ctx.fillText('★ BIẾN THỂ', cardX + 70 + this.ctx.measureText(definition.name).width + 8, cardY + 25);
+        const tagX = cardX + 70 + nameW + 8;
+        const tagY = cardY + 14;
+        const tagW = 68;
+        const tagH = 15;
+        this.ctx.fillStyle = locked ? 'rgba(51, 65, 85, 0.4)' : 'rgba(2, 6, 23, 0.7)';
+        this.ctx.fillRect(tagX, tagY, tagW, tagH);
+        this.ctx.strokeStyle = locked ? '#334155' : branchColor;
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(tagX, tagY, tagW, tagH);
+
+        this.ctx.fillStyle = locked ? '#64748b' : branchColor;
+        this.ctx.font = 'bold 8px monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('★ BIẾN THỂ', tagX + tagW / 2, tagY + 11);
       }
 
       // Effect Text
