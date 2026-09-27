@@ -1,9 +1,9 @@
 import { AlleyRat } from '../entities/AlleyRat';
 import { SaboteurShipper } from '../entities/SaboteurShipper';
 import { AlleyGuard } from '../entities/AlleyGuard';
+import { AlleyBrat } from '../entities/AlleyBrat';
 import { Stage1Scene } from '../scenes/Stage1Scene';
 import { SceneManager } from '../core/SceneManager';
-import { STAGE_1_CONFIG } from '../config/stage1';
 
 export interface StreetEnemiesTestResult {
   testName: string;
@@ -31,7 +31,7 @@ export function runStreetEnemiesTests(): { results: StreetEnemiesTestResult[] } 
 
     // Damage & KO
     rat.takeDamage(25, 0, 100, 100, 50);
-    const isKo = rat.state === 'KO' && !rat.isAlive && rat.getHurtbox().isInvulnerable;
+    const isKo = (rat.state as string) === 'KO' && !rat.isAlive && rat.getHurtbox().isInvulnerable;
 
     const passed = !initialHurtbox.isInvulnerable && noHitboxBeforeLeap && hasValidLeapHitbox && isKo;
     results.push({
@@ -55,7 +55,7 @@ export function runStreetEnemiesTests(): { results: StreetEnemiesTestResult[] } 
     sab.state = 'IDLE';
     sab.peelCooldown = 0;
     sab.updateAI(0.1, 450, 546, null, [], [], []);
-    const throwInitiated = sab.state === 'THROW_PEEL';
+    const throwInitiated = (sab.state as string) === 'THROW_PEEL';
 
     // Finish throw animation timer
     sab.stateTimer = 0;
@@ -113,7 +113,39 @@ export function runStreetEnemiesTests(): { results: StreetEnemiesTestResult[] } 
     });
   }
 
-  // Test 4: Stage1Scene dynamic street enemies spawning & checkpoint restoration
+  // Test 4: AlleyBrat water gun sniping, telegraph, and damage response
+  {
+    const brat = new AlleyBrat('brat_test', 500, 400, 'B');
+    let waterShot = false;
+    brat.onShootWater = (_x, _y, _vx, _vy) => {
+      waterShot = true;
+    };
+
+    // AI triggers AIM when player is in range (~200px)
+    brat.shootCooldown = 0;
+    brat.updateAI(0.1, 650, 420, [], [], []);
+    const isAiming = brat.state === 'AIM';
+
+    // Finish aim timer to shoot
+    brat.stateTimer = 0;
+    brat.updateAI(0.01, 650, 420, [], [], []);
+    const shotFired = (brat.state as string) === 'SHOOT' && waterShot;
+
+    // Taking damage
+    brat.takeDamage(20, 0, 100, 50, 450);
+    const isKo = (brat.state as string) === 'KO' && !brat.isAlive && brat.getHurtbox().isInvulnerable;
+
+    const passed = isAiming && shotFired && isKo;
+    results.push({
+      testName: 'AlleyBrat water gun telegraph, diagonal shot, and KO transition',
+      passed,
+      message: passed
+        ? 'AlleyBrat telegraphs aim, fires water projectile via callback, and cleanly transitions to KO'
+        : `Brat failed: aiming=${isAiming}, shotFired=${shotFired}, isKo=${isKo}`,
+    });
+  }
+
+  // Test 5: Stage1Scene dynamic street enemies and street NPCs initialization & retry
   {
     const mockManager = { switchScene: () => {} } as unknown as SceneManager;
     const stage = new Stage1Scene(mockManager);
@@ -123,23 +155,38 @@ export function runStreetEnemiesTests(): { results: StreetEnemiesTestResult[] } 
     const hasRats = stageAny.rats && stageAny.rats.length >= 2;
     const hasSaboteurs = stageAny.saboteurs && stageAny.saboteurs.length >= 1;
     const hasGuards = stageAny.guards && stageAny.guards.length >= 1;
+    const hasBrats = stageAny.brats && stageAny.brats.length >= 1;
+    const hasStreetNpcs = stageAny.streetNpcs && stageAny.streetNpcs.length >= 3;
 
-    // Checkpoint retry restores zone street enemies
-    stage.captureEncounterCheckpoint('C');
+    // Check interaction with Chị Ba Nước Mía
+    const chibaNpc = stageAny.streetNpcs.find((n: any) => n.role === 'chiba');
+    const playerHpBefore = stageAny.player.hp;
+    stageAny.player.hp = Math.max(1, stageAny.player.hp - 30);
+    chibaNpc.onInteract();
+    const chibaHealed = stageAny.player.hp > playerHpBefore - 30;
+
+    // Check interaction with Chú Bảy Vá Xe
+    const chubayNpc = stageAny.streetNpcs.find((n: any) => n.role === 'chubay');
+    stageAny.player.tapeCharges = 0;
+    chubayNpc.onInteract();
+    const chubayRefilled = stageAny.player.tapeCharges === stageAny.player.maxTapeCharges;
+
+    // Checkpoint retry restores zone B street enemies (rat + brat)
+    stage.captureEncounterCheckpoint('B');
     stageAny.rats = [];
-    stageAny.saboteurs = [];
+    stageAny.brats = [];
     stage.retryFromCheckpoint();
 
-    const restoredC = stageAny.rats.some((r: any) => r.zoneId === 'C') &&
-                      stageAny.saboteurs.some((s: any) => s.zoneId === 'C');
+    const restoredB = stageAny.rats.some((r: any) => r.zoneId === 'B') &&
+                      stageAny.brats.some((b: any) => b.zoneId === 'B');
 
-    const passed = hasRats && hasSaboteurs && hasGuards && restoredC;
+    const passed = hasRats && hasSaboteurs && hasGuards && hasBrats && hasStreetNpcs && chibaHealed && chubayRefilled && restoredB;
     results.push({
-      testName: 'Stage1Scene street enemies initialization and checkpoint restoration',
+      testName: 'Stage1Scene street enemies and NPCs initialization, interaction, and checkpoint restoration',
       passed,
       message: passed
-        ? 'Stage 1 initializes all 3 street enemy archetypes and cleanly restores them on checkpoint retry'
-        : `Stage1 failed: rats=${hasRats}, sabs=${hasSaboteurs}, guards=${hasGuards}, restoredC=${restoredC}`,
+        ? 'Stage 1 initializes all enemies and street NPCs (Chị Ba, Chú Bảy, Bà Năm), handles interactions, and restores them on retry'
+        : `Stage1 failed: rats=${hasRats}, sabs=${hasSaboteurs}, guards=${hasGuards}, brats=${hasBrats}, npcs=${hasStreetNpcs}, healed=${chibaHealed}, refilled=${chubayRefilled}, restoredB=${restoredB}`,
     });
   }
 

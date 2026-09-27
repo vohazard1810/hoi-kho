@@ -12,6 +12,7 @@ import { Thug } from '../entities/Thug';
 import { AlleyRat } from '../entities/AlleyRat';
 import { SaboteurShipper } from '../entities/SaboteurShipper';
 import { AlleyGuard } from '../entities/AlleyGuard';
+import { AlleyBrat } from '../entities/AlleyBrat';
 import { HazardData, PlatformData, STAGE_1_CONFIG, ZoneData } from '../config/stage1';
 import { DebugOverlay, PlayerDebugTelemetry } from '../debug/DebugOverlay';
 import { PlaceholderRenderer } from './PlaceholderRenderer';
@@ -54,6 +55,8 @@ export interface StageHazardOverlay {
   saboteurs?: SaboteurShipper[];
   guards?: AlleyGuard[];
   bananaTraps?: { x: number; y: number }[];
+  brats?: AlleyBrat[];
+  streetNpcs?: NPC[];
 }
 
 export class Renderer {
@@ -1434,6 +1437,390 @@ export class Renderer {
         this.renderEntityAlleyGuard(camera, guard);
       }
     }
+
+    // 9. Alley Brats (Trẻ Trâu Bắn Súng Nước - Bé Bo)
+    if (hazards.brats && hazards.brats.length > 0) {
+      for (const brat of hazards.brats) {
+        this.renderEntityAlleyBrat(camera, brat);
+      }
+    }
+
+    // 10. Ambient Street NPCs (Chị Ba Nước Mía, Chú Bảy Sửa Xe, Bà Năm Ban Công)
+    if (hazards.streetNpcs && hazards.streetNpcs.length > 0) {
+      for (const npc of hazards.streetNpcs) {
+        this.renderStreetNpc(camera, npc);
+      }
+    }
+  }
+
+  private renderEntityAlleyBrat(camera: Camera, brat: AlleyBrat): void {
+    const ctx = this.ctx;
+    const pos = camera.worldToScreen(brat.x, brat.y);
+    const isRight = brat.facing === 'right';
+    const isKO = brat.state === 'KO';
+
+    ctx.save();
+    // Shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.38)';
+    ctx.beginPath();
+    ctx.ellipse(pos.x + brat.width / 2, pos.y + brat.height - 2, 14, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.translate(pos.x + brat.width / 2, pos.y + brat.height / 2);
+    if (!isRight) ctx.scale(-1, 1);
+    if (isKO) {
+      ctx.rotate(Math.PI / 2);
+      ctx.translate(0, -10);
+    }
+
+    // Brat Body / Yellow tank top
+    ctx.fillStyle = brat.state === 'HURT' ? '#ef4444' : '#eab308';
+    ctx.beginPath();
+    ctx.roundRect(-8, -10, 16, 20, 3);
+    ctx.fill();
+
+    // Moss green shorts
+    ctx.fillStyle = '#4d7c0f';
+    ctx.fillRect(-7, 10, 6, 8);
+    ctx.fillRect(1, 10, 6, 8);
+
+    // Slippers
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(-8, 18, 7, 3);
+    ctx.fillRect(1, 18, 7, 3);
+
+    // Head
+    ctx.fillStyle = '#fed7aa';
+    ctx.beginPath();
+    ctx.arc(0, -17, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Red baseball cap worn sideways
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.arc(0, -20, 9, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(isRight ? 2 : -10, -21, 9, 3);
+
+    // Face / Expression
+    if (isKO) {
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-3, -18); ctx.lineTo(0, -15);
+      ctx.moveTo(0, -18); ctx.lineTo(-3, -15);
+      ctx.moveTo(2, -18); ctx.lineTo(5, -15);
+      ctx.moveTo(5, -18); ctx.lineTo(2, -15);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(2, -17, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#7c2d12';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(1, -14, 2.5, 0, Math.PI);
+      ctx.stroke();
+    }
+
+    // Toy Water Gun in hands
+    if (!isKO) {
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(4, -8, 14, 5);
+      ctx.fillStyle = '#ea580c';
+      ctx.fillRect(14, -7, 4, 3);
+      ctx.fillRect(6, -3, 3, 5);
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.75)';
+      ctx.beginPath();
+      ctx.arc(8, -11, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#bae6fd';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // Water Gun Aiming Line & Telegraph
+    if (brat.state === 'AIM') {
+      ctx.save();
+      const muzzlePos = {
+        x: isRight ? pos.x + brat.width + 10 : pos.x - 10,
+        y: pos.y + 18,
+      };
+      const pulse = 0.5 + Math.sin(performance.now() / 80) * 0.4;
+      ctx.strokeStyle = `rgba(56, 189, 248, ${pulse})`;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(muzzlePos.x, muzzlePos.y);
+      ctx.lineTo(muzzlePos.x + (isRight ? 180 : -180), muzzlePos.y + 90);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 9px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('💦 NHẮM BẮN!', pos.x + brat.width / 2, pos.y - 12);
+      ctx.restore();
+    }
+
+    // Overhead HUD / Tag
+    if (!isKO) {
+      ctx.save();
+      const hpRatio = Math.max(0, brat.hp / brat.maxHp);
+      const barW = 28;
+      const barH = 3;
+      const barX = pos.x + brat.width / 2 - barW / 2;
+      const barY = pos.y - 8;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+      ctx.fillStyle = hpRatio > 0.4 ? '#22c55e' : '#ef4444';
+      ctx.fillRect(barX, barY, barW * hpRatio, barH);
+
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 8px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('BÉ BO', pos.x + brat.width / 2, barY - 3);
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.font = 'bold 11px system-ui';
+      ctx.fillStyle = '#94a3b8';
+      ctx.textAlign = 'center';
+      ctx.fillText('😭 x_x', pos.x + brat.width / 2, pos.y - 4);
+      ctx.restore();
+    }
+  }
+
+  private renderStreetNpc(camera: Camera, npc: NPC): void {
+    const ctx = this.ctx;
+    const pos = camera.worldToScreen(npc.x, npc.y);
+
+    ctx.save();
+    // 1. Chị Ba Nước Mía (Zone A - Đầu Cầu)
+    if (npc.role === 'chiba') {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+      ctx.beginPath();
+      ctx.ellipse(pos.x + 24, pos.y + 60, 36, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Xe Nước Mía Inox Cart
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(pos.x + 8, pos.y + 20, 42, 38);
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(pos.x + 8, pos.y + 20, 42, 38);
+
+      // Glass cabinet on cart with green sugarcanes inside
+      ctx.fillStyle = 'rgba(224, 242, 254, 0.6)';
+      ctx.fillRect(pos.x + 12, pos.y + 4, 34, 18);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.strokeRect(pos.x + 12, pos.y + 4, 34, 18);
+
+      // Sugarcane stalks
+      ctx.fillStyle = '#84cc16';
+      for (let i = 0; i < 4; i++) {
+        ctx.fillRect(pos.x + 15 + i * 7, pos.y + 6, 4, 14);
+      }
+
+      // Wheels
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.arc(pos.x + 16, pos.y + 60, 6, 0, Math.PI * 2);
+      ctx.arc(pos.x + 42, pos.y + 60, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Umbrella
+      const umbrellaX = pos.x + 28;
+      const umbrellaY = pos.y - 12;
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath();
+      ctx.arc(umbrellaX, umbrellaY, 32, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0ea5e9';
+      ctx.beginPath();
+      ctx.arc(umbrellaX, umbrellaY, 32, Math.PI * 1.25, Math.PI * 1.75);
+      ctx.fill();
+
+      // Signboard
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(pos.x + 10, pos.y + 28, 38, 14);
+      ctx.strokeStyle = '#ca8a04';
+      ctx.strokeRect(pos.x + 10, pos.y + 28, 38, 14);
+      ctx.fillStyle = '#854d0e';
+      ctx.font = 'bold 8px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('NƯỚC MÍA', pos.x + 29, pos.y + 38);
+
+      // Chị Ba
+      const cbX = pos.x - 14;
+      const cbY = pos.y + 12;
+      ctx.fillStyle = '#f472b6';
+      ctx.beginPath();
+      ctx.roundRect(cbX, cbY + 14, 16, 22, 3);
+      ctx.fill();
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(cbX + 1, cbY + 36, 6, 14);
+      ctx.fillRect(cbX + 9, cbY + 36, 6, 14);
+      ctx.fillStyle = '#fed7aa';
+      ctx.beginPath();
+      ctx.arc(cbX + 8, cbY + 6, 7, 0, Math.PI * 2);
+      ctx.fill();
+      // Nón lá
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.moveTo(cbX - 4, cbY + 2);
+      ctx.lineTo(cbX + 20, cbY + 2);
+      ctx.lineTo(cbX + 8, cbY - 10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#ca8a04';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Speech bubble
+      const bob = Math.sin(performance.now() / 250) * 3;
+      ctx.fillStyle = '#0284c7';
+      ctx.beginPath();
+      ctx.roundRect(pos.x - 22, pos.y - 36 + bob, 115, 20, 5);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 10px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('🥤 TRÀ ĐÁ ĐÂY EM!', pos.x + 35, pos.y - 22 + bob);
+    }
+
+    // 2. Chú Bảy Sửa Xe (Zone B - Khu Ve Chai)
+    else if (npc.role === 'chubay') {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+      ctx.beginPath();
+      ctx.ellipse(pos.x + 20, pos.y + 60, 32, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Old tires
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.ellipse(pos.x + 36, pos.y + 54, 14, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(pos.x + 36, pos.y + 45, 14, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(pos.x + 36, pos.y + 36, 14, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#475569';
+      ctx.stroke();
+
+      // Signboard
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(pos.x + 26, pos.y + 12, 28, 16);
+      ctx.fillStyle = '#fef3c7';
+      ctx.font = 'bold 7px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('VÁ VỎ', pos.x + 40, pos.y + 22);
+
+      // Chú Bảy
+      const cbX = pos.x;
+      const cbY = pos.y + 16;
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(cbX + 2, cbY + 34, 14, 8);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(cbX + 2, cbY + 12, 14, 16);
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(cbX + 1, cbY + 28, 16, 8);
+      ctx.fillStyle = '#fed7aa';
+      ctx.beginPath();
+      ctx.arc(cbX + 9, cbY + 4, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#94a3b8';
+      ctx.arc(cbX + 9, cbY + 2, 7, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(cbX + 7, cbY + 6, 5, 2);
+
+      // Wrench
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(cbX + 16, cbY + 18);
+      ctx.lineTo(cbX + 24, cbY + 12);
+      ctx.stroke();
+
+      // Speech bubble
+      const bob = Math.sin(performance.now() / 250) * 3;
+      ctx.fillStyle = '#b45309';
+      ctx.beginPath();
+      ctx.roundRect(pos.x - 14, pos.y - 28 + bob, 110, 20, 5);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 9px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('🔧 CẨN THẬN XE LEAD!', pos.x + 41, pos.y - 14 + bob);
+    }
+
+    // 3. Bà Năm Hóng Chuyện Ban Công (Zone C)
+    else if (npc.role === 'banam') {
+      ctx.strokeStyle = '#92400e';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(pos.x - 15, pos.y + 44);
+      ctx.lineTo(pos.x + 45, pos.y + 44);
+      ctx.stroke();
+      for (let i = 0; i < 4; i++) {
+        ctx.fillRect(pos.x - 10 + i * 15, pos.y + 44, 4, 18);
+      }
+
+      // Flower pot
+      ctx.fillStyle = '#ea580c';
+      ctx.fillRect(pos.x + 28, pos.y + 36, 12, 10);
+      ctx.fillStyle = '#f43f5e';
+      ctx.beginPath();
+      ctx.arc(pos.x + 34, pos.y + 32, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Bà Năm
+      const bnX = pos.x;
+      const bnY = pos.y + 6;
+      ctx.fillStyle = '#c084fc';
+      ctx.beginPath();
+      ctx.roundRect(bnX, bnY + 12, 18, 24, 3);
+      ctx.fill();
+      ctx.fillStyle = '#fed7aa';
+      ctx.beginPath();
+      ctx.arc(bnX + 9, bnY + 4, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#e2e8f0';
+      ctx.arc(bnX + 9, bnY + 1, 7, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(bnX + 9, bnY - 6, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Fan
+      const fanSway = Math.sin(performance.now() / 200) * 0.3;
+      ctx.save();
+      ctx.translate(bnX + 18, bnY + 16);
+      ctx.rotate(fanSway);
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath();
+      ctx.ellipse(6, -6, 8, 12, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ca8a04';
+      ctx.stroke();
+      ctx.restore();
+
+      // Speech bubble
+      const bob = Math.sin(performance.now() / 250) * 3;
+      ctx.fillStyle = '#7e22ce';
+      ctx.beginPath();
+      ctx.roundRect(pos.x - 28, pos.y - 32 + bob, 126, 20, 5);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 9px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('👵 ĐỪNG BỂ HOA NHÀ BÀ!', pos.x + 35, pos.y - 18 + bob);
+    }
+
+    ctx.restore();
   }
 
   private renderBananaTrap(camera: Camera, trap: { x: number; y: number }): void {

@@ -1,17 +1,19 @@
 import { Interactable } from '../systems/InteractionSystem';
 import { Entity } from './Entity';
 
+export type NpcRole = 'coba' | 'chutu' | 'chiba' | 'chubay' | 'banam';
+
 export class NPC extends Entity implements Interactable {
   public name: string;
   public promptText: string;
-  public role: 'coba' | 'chutu';
+  public role: NpcRole;
   public onInteractCallback: () => void;
 
   constructor(
     id: string,
     x: number,
     y: number,
-    role: 'coba' | 'chutu',
+    role: NpcRole,
     name: string,
     promptText: string,
     onInteract: () => void

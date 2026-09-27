@@ -14,6 +14,7 @@ import { Thug } from '../entities/Thug';
 import { AlleyRat } from '../entities/AlleyRat';
 import { SaboteurShipper } from '../entities/SaboteurShipper';
 import { AlleyGuard } from '../entities/AlleyGuard';
+import { AlleyBrat } from '../entities/AlleyBrat';
 import { Renderer, StageHazardOverlay } from '../rendering/Renderer';
 import { CollisionSystem } from '../systems/CollisionSystem';
 import { CombatSystem } from '../systems/CombatSystem';
@@ -61,6 +62,10 @@ export class Stage1Scene implements Scene {
   private rats: AlleyRat[] = [];
   private saboteurs: SaboteurShipper[] = [];
   private guards: AlleyGuard[] = [];
+  private brats: AlleyBrat[] = [];
+  private streetNpcs: NPC[] = [];
+  private chibaHealed: boolean = false;
+  private chubayRefilled: boolean = false;
   private bananaTraps: { id: string; x: number; y: number; timer: number }[] = [];
   private projectiles: Projectile[] = [];
   private enemyProjectiles: EnemyProjectile[] = [];
@@ -178,7 +183,7 @@ export class Stage1Scene implements Scene {
 
       // AoE damage & knockdown to nearby enemies
       const slamRadius = 120;
-      const allEnemies: (Dog | Rival | Thug | BossDog | AlleyRat | SaboteurShipper | AlleyGuard)[] = [
+      const allEnemies: (Dog | Rival | Thug | BossDog | AlleyRat | SaboteurShipper | AlleyGuard | AlleyBrat)[] = [
         ...this.dogs,
         ...this.rivals,
         ...this.thugs,
@@ -186,6 +191,7 @@ export class Stage1Scene implements Scene {
         ...this.rats,
         ...this.saboteurs,
         ...this.guards,
+        ...this.brats,
       ];
       for (const enemy of allEnemies) {
         if (!enemy.isAlive) continue;
@@ -241,7 +247,46 @@ export class Stage1Scene implements Scene {
     this.guards = [
       new AlleyGuard('guard_d1', 2440, 538, 'D'),
     ];
+    const brat = new AlleyBrat('brat_b1', 1180, 442, 'B');
+    brat.onShootWater = (x, y) => {
+      this.enemyProjectiles.push(
+        new EnemyProjectile(brat.id, x, y, this.player.x + this.player.width / 2, this.player.y + this.player.height / 2)
+      );
+      this.audio.play('enemy_warning');
+    };
+    this.brats = [brat];
     this.bananaTraps = [];
+
+    // Ambient and interactive street NPCs
+    this.chibaHealed = false;
+    this.chubayRefilled = false;
+    this.streetNpcs = [
+      new NPC('npc_chiba', 260, 556, 'chiba', 'Chị Ba Nước Mía', 'Uống trà đá Chị Ba (Hồi 25 HP)', () => {
+        if (!this.chibaHealed) {
+          this.chibaHealed = true;
+          this.player.hp = Math.min(this.player.maxHp, this.player.hp + 25);
+          this.audio.play('pickup');
+          this.gameFeel.triggerComicText('+25 HP TRÀ ĐÁ ĐƯỜNG 🥤', this.player.x, this.player.y - 25, '#38bdf8');
+          this.showPhoneAlert('CHỊ BA NƯỚC MÍA', 'Uống ly trà đá mát rượi lấy sức giao hàng nghen em trai! Miễn phí đó!', '🥤');
+        } else {
+          this.showPhoneAlert('CHỊ BA NƯỚC MÍA', 'Giao lẹ kẻo trời mưa ướt kiện hàng nghen em trai!', '🥤');
+        }
+      }),
+      new NPC('npc_chubay', 830, 556, 'chubay', 'Chú Bảy Vá Xe', 'Hỏi đường Chú Bảy Bơm Xe', () => {
+        if (!this.chubayRefilled) {
+          this.chubayRefilled = true;
+          this.player.tapeCharges = this.player.maxTapeCharges;
+          this.audio.play('parcel_repair');
+          this.gameFeel.triggerComicText('+TỐI ĐA BĂNG KEO 📦', this.player.x, this.player.y - 25, '#facc15');
+          this.showPhoneAlert('CHÚ BẢY VÁ XE', 'Khúc quẹo này xe Ninja Lead chạy dữ lắm! Nghe tiếng bíp bíp là bấm nhảy lên né liền nghen con!', '🔧');
+        } else {
+          this.showPhoneAlert('CHÚ BẢY VÁ XE', 'Nhớ chú dặn đó, thấy vũng nước với bãi ve chai thì nhảy qua chứ đừng lao vào!', '🔧');
+        }
+      }),
+      new NPC('npc_banam', 1750, 376, 'banam', 'Bà Năm Ban Công', 'Bà Năm Hóng Chuyện', () => {
+        this.showPhoneAlert('BÀ NĂM BAN CÔNG', 'Mấy đứa bay giành đơn đừng có quẹt trúng chậu hoa lan của bà nghen! Thằng kia vừa ném vỏ chuối kìa!', '👵');
+      }),
+    ];
   }
 
   public enterFreshStage(): void {
@@ -405,6 +450,15 @@ export class Stage1Scene implements Scene {
     } else if (cp.zoneId === 'B') {
       this.rats = this.rats.filter((r) => r.zoneId !== 'B');
       this.rats.push(new AlleyRat('rat_b1', 1060, 580, 'B'));
+      this.brats = this.brats.filter((b) => b.zoneId !== 'B');
+      const brat = new AlleyBrat('brat_b1', 1180, 442, 'B');
+      brat.onShootWater = (x, y) => {
+        this.enemyProjectiles.push(
+          new EnemyProjectile(brat.id, x, y, this.player.x + this.player.width / 2, this.player.y + this.player.height / 2)
+        );
+        this.audio.play('enemy_warning');
+      };
+      this.brats.push(brat);
     } else if (cp.zoneId === 'C') {
       this.rats = this.rats.filter((r) => r.zoneId !== 'C');
       this.rats.push(new AlleyRat('rat_c1', 1650, 580, 'C'));
@@ -456,6 +510,8 @@ export class Stage1Scene implements Scene {
     this.rats = [];
     this.saboteurs = [];
     this.guards = [];
+    this.brats = [];
+    this.streetNpcs = [];
     this.bananaTraps = [];
     this.projectiles = [];
     this.enemyProjectiles = [];
@@ -1225,6 +1281,44 @@ export class Stage1Scene implements Scene {
       this.checkEnemyLootDrop(guard.id, 'thug', guard.isAlive, guard.x, guard.y);
     }
 
+    // 8f. Update Alley Brats
+    for (const brat of this.brats) {
+      if (!brat.isAlive && brat.state !== 'KO') continue;
+      brat.updateAI(
+        dt,
+        this.player.x,
+        this.player.y,
+        STAGE_1_CONFIG.PLATFORMS,
+        STAGE_1_CONFIG.GROUND_SEGMENTS,
+        STAGE_1_CONFIG.HAZARDS
+      );
+      this.announceEnemyState(brat.id, brat.state, false);
+
+      const prevBratY = brat.y;
+      brat.y += brat.vy * dt;
+      CollisionSystem.resolveHorizontal(brat, STAGE_1_CONFIG.WORLD_WIDTH);
+      CollisionSystem.resolveVertical(
+        brat,
+        STAGE_1_CONFIG.PLATFORMS,
+        STAGE_1_CONFIG.GROUND_SEGMENTS,
+        prevBratY
+      );
+      brat.update(dt);
+
+      if (brat.isAlive && brat.state !== 'KO') {
+        const outOfBounds = brat.y > STAGE_1_CONFIG.WORLD_HEIGHT - 60;
+        if (outOfBounds) {
+          brat.x = 1180;
+          brat.y = 442;
+          brat.vx = 0;
+          brat.vy = 0;
+          brat.state = 'IDLE';
+          brat.isGrounded = true;
+        }
+      }
+      this.checkEnemyLootDrop(brat.id, 'rival', brat.isAlive, brat.x, brat.y);
+    }
+
     // 9. Update Projectiles
     for (const proj of this.projectiles) {
       if (proj.isExpired) continue;
@@ -1253,6 +1347,7 @@ export class Stage1Scene implements Scene {
       ...this.rats.filter((r) => r.isAlive),
       ...this.saboteurs.filter((s) => s.isAlive),
       ...this.guards.filter((g) => g.isAlive),
+      ...this.brats.filter((b) => b.isAlive),
     ];
 
     const playerHitbox = this.player.getActiveHitbox();
@@ -1442,18 +1537,26 @@ export class Stage1Scene implements Scene {
     // 11. Update Loot System & Pickups
     this.lootSystem.update(dt, this.player, objective);
 
-    // 12. Interaction Check with Customer Chú Tư
-    const nearby = InteractionSystem.getNearbyInteractable(this.player.getRect(), [this.customer]);
+    // 12. Interaction Check with Customer Chú Tư and Street NPCs
+    const interactables = [...this.streetNpcs, this.customer];
+    const nearby = InteractionSystem.getNearbyInteractable(this.player.getRect(), interactables);
     if (nearby) {
-      if (this.isParcelDropped) {
-        this.nearbyPrompt = 'Mất kiện hàng rồi! Hãy quay lại tìm nhặt [ E ]';
-      } else if (this.zoneStates['E'] === 'CLEARED') {
+      if (nearby.id === this.customer.id) {
+        if (this.isParcelDropped) {
+          this.nearbyPrompt = 'Mất kiện hàng rồi! Hãy quay lại tìm nhặt [ E ]';
+        } else if (this.zoneStates['E'] === 'CLEARED') {
+          this.nearbyPrompt = nearby.promptText;
+          if (input.isJustPressed('interact')) {
+            nearby.onInteract();
+          }
+        } else {
+          this.nearbyPrompt = 'Cần đánh bại Chó Đại Ca trước khi giao!';
+        }
+      } else {
         this.nearbyPrompt = nearby.promptText;
         if (input.isJustPressed('interact')) {
           nearby.onInteract();
         }
-      } else {
-        this.nearbyPrompt = 'Cần đánh bại Chó Đại Ca trước khi giao!';
       }
     } else if (!this.nearbyPrompt?.includes('Nhặt lại') && !this.nearbyPrompt?.includes('ĐÁ CHÓ') && !this.nearbyPrompt?.includes('SPACE')) {
       this.nearbyPrompt = null;
@@ -1511,7 +1614,8 @@ export class Stage1Scene implements Scene {
           const zoneRatsAlive = this.rats.some((r) => r.zoneId === zoneId && r.isAlive && r.hp > 0);
           const zoneSaboteursAlive = this.saboteurs.some((s) => s.zoneId === zoneId && s.isAlive && s.hp > 0);
           const zoneGuardsAlive = this.guards.some((g) => g.zoneId === zoneId && g.isAlive && g.hp > 0);
-          if (zoneRatsAlive || zoneSaboteursAlive || zoneGuardsAlive) {
+          const zoneBratsAlive = this.brats.some((b) => b.zoneId === zoneId && b.isAlive && b.hp > 0);
+          if (zoneRatsAlive || zoneSaboteursAlive || zoneGuardsAlive || zoneBratsAlive) {
             allMandatoryDefeated = false;
           }
         }
@@ -1644,6 +1748,8 @@ export class Stage1Scene implements Scene {
       rats: this.rats,
       saboteurs: this.saboteurs,
       guards: this.guards,
+      brats: this.brats,
+      streetNpcs: this.streetNpcs,
       bananaTraps: this.bananaTraps,
     };
 
