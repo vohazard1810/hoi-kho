@@ -3,7 +3,7 @@ import { Player } from '../entities/Player';
 import { Projectile } from '../entities/Projectile';
 import { UpgradeId, UpgradeSnapshot } from '../systems/UpgradeSystem';
 
-type EquipmentImageId = UpgradeId | 'reflective_badge';
+type EquipmentImageId = UpgradeId | 'reflective_badge' | 'express_core';
 
 export class EquipmentVisualRenderer {
   private static images = new Map<EquipmentImageId, HTMLImageElement>();
@@ -13,7 +13,12 @@ export class EquipmentVisualRenderer {
     let image = this.images.get(id);
     if (!image) {
       image = new Image();
-      const filename = id === 'reflective_backpack' ? 'reflective_badge' : id === 'agile_dodge' ? 'dep_to_ong' : id;
+      const filename = id === 'reflective_backpack' || id === 'reinforced_parcel' ? 'reflective_badge'
+        : id === 'agile_dodge' ? 'dep_to_ong'
+        : id === 'scanner_pro' || id === 'wide_scan' || id === 'precision_scan' ? 'scanner_pro'
+        : id === 'sticky_tape' || id === 'tape_range' || id === 'tape_impact' ? 'sticky_tape'
+        : id === 'express_core' || id === 'express_radius' || id === 'momentum_reserve' ? 'express_core'
+        : id;
       image.src = `/assets/equipment/${filename}.png`;
       this.images.set(id, image);
     }
@@ -31,35 +36,46 @@ export class EquipmentVisualRenderer {
     const branch = id === 'scanner_pro' || id === 'wide_scan' || id === 'precision_scan' ? 'J'
       : id === 'sticky_tape' || id === 'tape_range' || id === 'tape_impact' ? 'K'
       : id === 'reflective_backpack' || id === 'agile_dodge' || id === 'reinforced_parcel' ? 'L' : 'Q';
-    const baseId: EquipmentImageId = id === 'agile_dodge' ? 'agile_dodge' : branch === 'J' ? 'scanner_pro' : branch === 'K' ? 'sticky_tape' : 'reflective_badge';
-    const image = branch === 'Q' || branch === 'J' ? null : this.getImage(baseId);
+    const baseId: EquipmentImageId = id === 'agile_dodge' ? 'agile_dodge'
+      : branch === 'J' ? 'scanner_pro'
+      : branch === 'K' ? 'sticky_tape'
+      : branch === 'L' ? 'reflective_badge'
+      : 'express_core';
+    const image = this.getImage(baseId);
+
     ctx.save();
     ctx.globalAlpha = alpha;
-    if (branch === 'J') {
-      // Wrist scanner, not the obsolete pistol-shaped inventory prop.
-      ctx.save(); ctx.translate(x, y); ctx.scale(size / 32, size / 32);
-      ctx.fillStyle = '#fb923c'; ctx.fillRect(10, 1, 12, 30);
-      ctx.fillStyle = '#17283c'; ctx.fillRect(5, 7, 22, 18);
-      ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.5; ctx.strokeRect(5, 7, 22, 18);
-      ctx.fillStyle = '#22d3ee'; ctx.fillRect(9, 11, 14, 7);
-      ctx.fillStyle = '#f8fafc'; ctx.fillRect(10, 12, 2, 5); ctx.fillRect(15, 12, 1, 5); ctx.fillRect(19, 12, 2, 5);
-      ctx.fillStyle = '#fb923c'; ctx.fillRect(12, 21, 8, 2); ctx.restore();
-    } else if (image) ctx.drawImage(image, x, y, size, size);
-    else {
-      const gradient = ctx.createRadialGradient(x + size / 2, y + size / 2, 2, x + size / 2, y + size / 2, size / 2);
-      gradient.addColorStop(0, '#fef08a'); gradient.addColorStop(0.45, '#f97316'); gradient.addColorStop(1, '#9a3412');
-      ctx.fillStyle = gradient;
-      ctx.beginPath(); ctx.arc(x + size / 2, y + size / 2, size * 0.36, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#e9d5ff'; ctx.lineWidth = 2; ctx.stroke();
+
+    if (image) {
+      ctx.drawImage(image, x, y, size, size);
+    } else {
+      const fallbackGrad = ctx.createLinearGradient(x, y, x + size, y + size);
+      fallbackGrad.addColorStop(0, branch === 'J' ? '#0284c7' : branch === 'K' ? '#ca8a04' : branch === 'L' ? '#16a34a' : '#ea580c');
+      fallbackGrad.addColorStop(1, '#070f1e');
+      ctx.fillStyle = fallbackGrad;
+      ctx.fillRect(x, y, size, size);
     }
+
     const modifier: Partial<Record<UpgradeId, string>> = {
       wide_scan: '↔', precision_scan: '◎', tape_range: '»', tape_impact: '+',
-      agile_dodge: '›', reinforced_parcel: '◆', express_radius: '◉', momentum_reserve: 'Ⅱ',
+      agile_dodge: '⚡', reinforced_parcel: '◆', express_radius: '◉', momentum_reserve: 'Ⅱ',
     };
     if (modifier[id]) {
-      ctx.fillStyle = 'rgba(2,6,23,0.9)'; ctx.beginPath(); ctx.arc(x + size - 5, y + 6, 9, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
-      ctx.fillText(modifier[id]!, x + size - 5, y + 10);
+      const badgeR = Math.max(7, Math.round(size * 0.22));
+      const badgeX = x + size - badgeR;
+      const badgeY = y + badgeR;
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.92)';
+      ctx.beginPath();
+      ctx.arc(badgeX, badgeY, badgeR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = branch === 'J' ? '#38bdf8' : branch === 'K' ? '#fde047' : branch === 'L' ? '#4ade80' : '#fb923c';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${Math.round(size * 0.26)}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(modifier[id]!, badgeX, badgeY);
     }
     ctx.restore();
   }

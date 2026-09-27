@@ -16,6 +16,17 @@ import { EconomySystem } from '../systems/EconomySystem';
 import { AssetManager } from '../assets/AssetManager';
 
 export class PlaceholderRenderer {
+  private static playerPortrait: HTMLImageElement | null = null;
+
+  private static getPlayerPortrait(): HTMLImageElement | null {
+    if (typeof Image === 'undefined') return null;
+    if (!this.playerPortrait) {
+      this.playerPortrait = new Image();
+      this.playerPortrait.src = '/assets/ui/portrait_player.png';
+    }
+    return this.playerPortrait.complete && this.playerPortrait.naturalWidth > 0 ? this.playerPortrait : null;
+  }
+
   public static renderBackground(ctx: CanvasRenderingContext2D, width: number, height: number, theme: 'hub' | 'stage1'): void {
     if (theme === 'hub') {
       // Hub Background - clean warm neutral workshop ambiance
@@ -1075,29 +1086,43 @@ export class PlaceholderRenderer {
     ctx.lineWidth = 1.5;
     ctx.strokeRect(portX, portY, portW, portH);
 
-    // Try to render authentic Hội Khờ pixel art sprite portrait
+    // Try to render authentic Hội Khờ HD portrait
     let renderedSprite = false;
     try {
-      const playerSet = AssetManager.getInstance().getCharacterSet('player');
-      const idleState = playerSet?.states.get('idle');
-      if (idleState && idleState.image && idleState.image.complete && idleState.image.naturalWidth > 0) {
+      const portrait = this.getPlayerPortrait();
+      if (portrait) {
         ctx.save();
         ctx.beginPath();
         ctx.rect(portX + 1, portY + 1, portW - 2, portH - 2);
         ctx.clip();
-
-        const sw = idleState.frameWidth || 96;
-        const sh = idleState.frameHeight || 96;
-        // Head & chest crop of Hội Khờ's real sprite
-        const cropX = Math.round(sw * 0.22);
-        const cropY = Math.round(sh * 0.12);
-        const cropW = Math.round(sw * 0.56);
-        const cropH = Math.round(sh * 0.56);
-
-        ctx.imageSmoothingEnabled = false; // keep pixel art crisp
-        ctx.drawImage(idleState.image, cropX, cropY, cropW, cropH, portX + 2, portY + 2, portW - 4, portH - 4);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        // Precise crop centered on face & cap from 260x260 image
+        ctx.drawImage(portrait, 45, 0, 200, 215, portX + 2, portY + 2, portW - 4, portH - 4);
         ctx.restore();
         renderedSprite = true;
+      } else {
+        const playerSet = AssetManager.getInstance().getCharacterSet('player');
+        const idleState = playerSet?.states.get('idle');
+        if (idleState && idleState.image && idleState.image.complete && idleState.image.naturalWidth > 0) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(portX + 1, portY + 1, portW - 2, portH - 2);
+          ctx.clip();
+
+          const sw = idleState.frameWidth || 96;
+          const sh = idleState.frameHeight || 96;
+          // Head & chest crop of Hội Khờ's real sprite (always starting at Y=0 so head is never cut off)
+          const cropX = Math.round(sw * 0.20);
+          const cropY = 0;
+          const cropW = Math.round(sw * 0.58);
+          const cropH = Math.round(sh * 0.62);
+
+          ctx.imageSmoothingEnabled = false; // keep pixel art crisp
+          ctx.drawImage(idleState.image, cropX, cropY, cropW, cropH, portX + 2, portY + 2, portW - 4, portH - 4);
+          ctx.restore();
+          renderedSprite = true;
+        }
       }
     } catch {
       renderedSprite = false;

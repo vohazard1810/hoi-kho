@@ -803,161 +803,364 @@ export class Renderer {
   }
 
   private renderUpgradePanel(snapshot: UpgradeSnapshot, selectedIndex: number): void {
-    const x = 140;
-    const y = 60;
-    const w = 1000;
-    const h = 600;
+    const x = 120;
+    const y = 44;
+    const w = 1040;
+    const h = 632;
 
     this.ctx.save();
-    // Backdrop dark scrim
-    this.ctx.fillStyle = 'rgba(2, 6, 18, 0.82)';
+    // Backdrop dark scrim with radial ambient
+    this.ctx.fillStyle = 'rgba(2, 6, 18, 0.88)';
     this.ctx.fillRect(0, 0, 1280, 720);
 
-    // Modal background - Carbon-slate workshop aesthetic
-    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-    this.ctx.shadowBlur = 28;
-    this.ctx.shadowOffsetY = 8;
-    this.ctx.fillStyle = '#070f1e';
-    this.ctx.fillRect(x, y, w, h);
+    // Vignette shadow behind modal
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+    this.ctx.shadowBlur = 32;
+    this.ctx.shadowOffsetY = 12;
+
+    // Angled chamfered modal chassis
+    const chamfer = 14;
+    this.ctx.beginPath();
+    this.ctx.moveTo(x + chamfer, y);
+    this.ctx.lineTo(x + w - chamfer, y);
+    this.ctx.lineTo(x + w, y + chamfer);
+    this.ctx.lineTo(x + w, y + h - chamfer);
+    this.ctx.lineTo(x + w - chamfer, y + h);
+    this.ctx.lineTo(x + chamfer, y + h);
+    this.ctx.lineTo(x, y + h - chamfer);
+    this.ctx.lineTo(x, y + chamfer);
+    this.ctx.closePath();
+
+    // High-tech carbon gradient body
+    const bodyGrad = this.ctx.createLinearGradient(x, y, x, y + h);
+    bodyGrad.addColorStop(0, '#0a101d');
+    bodyGrad.addColorStop(0.5, '#070c16');
+    bodyGrad.addColorStop(1, '#050811');
+    this.ctx.fillStyle = bodyGrad;
+    this.ctx.fill();
+
     this.ctx.shadowBlur = 0;
     this.ctx.shadowOffsetY = 0;
 
-    this.ctx.strokeStyle = '#f97316';
-    this.ctx.lineWidth = 2.5;
-    this.ctx.strokeRect(x, y, w, h);
-
-    // Header bar with industrial gradient
-    const headGrad = this.ctx.createLinearGradient(x, y, x + w, y);
-    headGrad.addColorStop(0, '#ea580c');
-    headGrad.addColorStop(1, '#7c2d12');
-    this.ctx.fillStyle = headGrad;
-    this.ctx.fillRect(x, y, w, 64);
-    this.ctx.strokeStyle = '#f97316';
-    this.ctx.beginPath();
-    this.ctx.moveTo(x, y + 64);
-    this.ctx.lineTo(x + w, y + 64);
+    // Armored outer chassis border
+    this.ctx.strokeStyle = '#1e293b';
+    this.ctx.lineWidth = 2;
     this.ctx.stroke();
 
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.font = '900 22px system-ui, sans-serif';
-    this.ctx.textAlign = 'left';
-    this.ctx.fillText('🛠️ BÀN ĐỒ NGHỀ SHIPPER • SXP WORKSHOP', x + 28, y + 41);
+    // Corner tactical brackets in glowing neon orange
+    const bracketLen = 22;
+    this.ctx.strokeStyle = '#f97316';
+    this.ctx.lineWidth = 3;
+    this.ctx.lineCap = 'square';
 
-    // Right-aligned header stats
-    this.ctx.fillStyle = '#fef08a';
-    this.ctx.font = 'bold 15px monospace';
-    this.ctx.textAlign = 'right';
-    this.ctx.fillText(`⚙ ${snapshot.parts} LINH KIỆN   •   ⭐ UY TÍN ${snapshot.reputation}   •   TIER ${snapshot.unlockedTier}`, x + w - 28, y + 41);
+    // Top-Left bracket
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, y + chamfer + bracketLen);
+    this.ctx.lineTo(x, y + chamfer);
+    this.ctx.lineTo(x + chamfer, y);
+    this.ctx.lineTo(x + chamfer + bracketLen, y);
+    this.ctx.stroke();
+
+    // Top-Right bracket
+    this.ctx.beginPath();
+    this.ctx.moveTo(x + w - chamfer - bracketLen, y);
+    this.ctx.lineTo(x + w - chamfer, y);
+    this.ctx.lineTo(x + w, y + chamfer);
+    this.ctx.lineTo(x + w, y + chamfer + bracketLen);
+    this.ctx.stroke();
+
+    // Bottom-Left bracket
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, y + h - chamfer - bracketLen);
+    this.ctx.lineTo(x, y + h - chamfer);
+    this.ctx.lineTo(x + chamfer, y + h);
+    this.ctx.lineTo(x + chamfer + bracketLen, y + h);
+    this.ctx.stroke();
+
+    // Bottom-Right bracket
+    this.ctx.beginPath();
+    this.ctx.moveTo(x + w - chamfer - bracketLen, y + h);
+    this.ctx.lineTo(x + w - chamfer, y + h);
+    this.ctx.lineTo(x + w, y + h - chamfer);
+    this.ctx.lineTo(x + w, y + h - chamfer - bracketLen);
+    this.ctx.stroke();
+
+    // Header bar with industrial gradient and top hazard warning line
+    const headerH = 66;
+    const headGrad = this.ctx.createLinearGradient(x, y, x + w, y);
+    headGrad.addColorStop(0, '#1c1917');
+    headGrad.addColorStop(0.3, '#292524');
+    headGrad.addColorStop(0.7, '#1c1917');
+    headGrad.addColorStop(1, '#0c0a09');
+    this.ctx.fillStyle = headGrad;
+    this.ctx.fillRect(x + 2, y + 2, w - 4, headerH);
+
+    // Hazard accent strip along the very top of header
+    this.ctx.fillStyle = '#ea580c';
+    this.ctx.fillRect(x + chamfer, y + 2, w - chamfer * 2, 3);
+
+    // Bottom border of header
+    this.ctx.strokeStyle = 'rgba(249, 115, 22, 0.4)';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, y + headerH);
+    this.ctx.lineTo(x + w, y + headerH);
+    this.ctx.stroke();
+
+    // SXP Icon & Title
+    this.ctx.fillStyle = '#f97316';
+    this.ctx.font = '900 13px system-ui, sans-serif';
+    this.ctx.textAlign = 'left';
+    this.ctx.fillText('SXP LOGISTICS ARMORY', x + 24, y + 26);
+
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.font = '900 20px system-ui, sans-serif';
+    this.ctx.fillText('🛠️ BÀN ĐỒ NGHỀ SHIPPER', x + 24, y + 50);
+
+    // Tactical Pill Badges for Parts, Reputation, Tier
+    const badgeY = y + 22;
+    const badgeH = 26;
+
+    const drawBadge = (bx: number, bw: number, label: string, valText: string, color: string, bg: string) => {
+      this.ctx.fillStyle = bg;
+      this.ctx.fillRect(bx, badgeY, bw, badgeH);
+      this.ctx.strokeStyle = color;
+      this.ctx.lineWidth = 1.2;
+      this.ctx.strokeRect(bx, badgeY, bw, badgeH);
+      this.ctx.fillStyle = color;
+      this.ctx.font = 'bold 10px monospace';
+      this.ctx.textAlign = 'left';
+      this.ctx.fillText(label, bx + 8, badgeY + 17);
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.font = '900 12px monospace';
+      this.ctx.textAlign = 'right';
+      this.ctx.fillText(valText, bx + bw - 8, badgeY + 17);
+    };
+
+    const b3W = 120, b2W = 140, b1W = 150;
+    const b3X = x + w - 24 - b3W;
+    const b2X = b3X - 12 - b2W;
+    const b1X = b2X - 12 - b1W;
+
+    drawBadge(b1X, b1W, '⚙ LINH KIỆN', `${snapshot.parts}`, '#fbbf24', 'rgba(245, 158, 11, 0.15)');
+    drawBadge(b2X, b2W, '⭐ UY TÍN', `CẤP ${snapshot.reputation}`, '#fde047', 'rgba(234, 179, 8, 0.15)');
+    drawBadge(b3X, b3W, '🛡️ CẤP BẬC', `TIER ${snapshot.unlockedTier}`, '#38bdf8', 'rgba(56, 189, 248, 0.15)');
 
     // Grid of 12 upgrades (2 cols x 6 rows)
+    const cardW = 488;
+    const cardH = 70;
+    const startY = y + headerH + 12;
+    const rowGap = 12;
+    const colGap = 16;
+    const leftMargin = x + 24;
+
     snapshot.definitions.forEach((definition, index) => {
       const col = index % 2;
       const row = Math.floor(index / 2);
-      const cardX = x + 24 + col * 480;
-      const cardY = y + 78 + row * 74;
-      const cardW = 468;
-      const cardH = 64;
+      const cardX = leftMargin + col * (cardW + colGap);
+      const cardY = startY + row * (cardH + rowGap);
 
       const owned = snapshot.purchased.has(definition.id);
       const equipped = snapshot.equipped.get(definition.branch) === definition.id;
       const locked = definition.tier > snapshot.unlockedTier;
       const isSelected = index === selectedIndex;
 
-      // Card Background
-      this.ctx.fillStyle = isSelected
-        ? 'rgba(67, 36, 12, 0.95)'
-        : locked
-        ? 'rgba(15, 23, 42, 0.65)'
-        : equipped
-        ? 'rgba(6, 78, 59, 0.88)'
-        : owned
-        ? 'rgba(30, 58, 138, 0.65)'
-        : 'rgba(23, 37, 84, 0.5)';
-      this.ctx.fillRect(cardX, cardY, cardW, cardH);
+      const branchColors: Record<string, string> = {
+        J: '#38bdf8',
+        K: '#facc15',
+        L: '#4ade80',
+        Q: '#fb923c',
+      };
+      const branchColor = branchColors[definition.branch] ?? '#94a3b8';
 
-      // Card Border / Selection
+      // Card Base Background
+      this.ctx.save();
+      const cardGrad = this.ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
       if (isSelected) {
-        this.ctx.strokeStyle = '#f59e0b';
-        this.ctx.lineWidth = 3;
+        cardGrad.addColorStop(0, '#2e1807');
+        cardGrad.addColorStop(0.5, '#431407');
+        cardGrad.addColorStop(1, '#1c0a00');
+      } else if (equipped) {
+        cardGrad.addColorStop(0, '#062d1f');
+        cardGrad.addColorStop(0.7, '#041f16');
+        cardGrad.addColorStop(1, '#02150f');
+      } else if (owned) {
+        cardGrad.addColorStop(0, '#0c223c');
+        cardGrad.addColorStop(0.7, '#08172c');
+        cardGrad.addColorStop(1, '#050d1a');
+      } else if (locked) {
+        cardGrad.addColorStop(0, '#0b0f19');
+        cardGrad.addColorStop(1, '#060910');
+      } else {
+        cardGrad.addColorStop(0, '#0f172a');
+        cardGrad.addColorStop(1, '#090d16');
+      }
+
+      this.ctx.fillStyle = cardGrad;
+
+      // Chamfered top-right card shape
+      const cChamfer = 10;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cardX, cardY);
+      this.ctx.lineTo(cardX + cardW - cChamfer, cardY);
+      this.ctx.lineTo(cardX + cardW, cardY + cChamfer);
+      this.ctx.lineTo(cardX + cardW, cardY + cardH);
+      this.ctx.lineTo(cardX, cardY + cardH);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Card Border & Glow
+      if (isSelected) {
+        const pulse = 0.7 + Math.sin(performance.now() * 0.006) * 0.3;
         this.ctx.shadowColor = '#f59e0b';
-        this.ctx.shadowBlur = 8;
-        this.ctx.strokeRect(cardX, cardY, cardW, cardH);
+        this.ctx.shadowBlur = 10 * pulse;
+        this.ctx.strokeStyle = '#fbbf24';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.stroke();
         this.ctx.shadowBlur = 0;
+
+        // Selection left indicator chevron
+        this.ctx.fillStyle = '#fbbf24';
+        this.ctx.beginPath();
+        this.ctx.moveTo(cardX - 12, cardY + cardH / 2 - 6);
+        this.ctx.lineTo(cardX - 4, cardY + cardH / 2);
+        this.ctx.lineTo(cardX - 12, cardY + cardH / 2 + 6);
+        this.ctx.closePath();
+        this.ctx.fill();
       } else {
         this.ctx.strokeStyle = equipped
           ? '#22c55e'
           : owned
           ? '#38bdf8'
           : locked
-          ? '#334155'
-          : '#475569';
-        this.ctx.lineWidth = 1.5;
-        this.ctx.strokeRect(cardX, cardY, cardW, cardH);
+          ? '#1e293b'
+          : '#334155';
+        this.ctx.lineWidth = 1.2;
+        this.ctx.stroke();
       }
 
-      // Real equipment icon plus a small branch/tier badge.
-      const branchColors: Record<string, string> = { J: '#38bdf8', K: '#fde047', L: '#4ade80', Q: '#c084fc' };
-      const badgeColor = branchColors[definition.branch] ?? '#94a3b8';
+      // Branch color stripe on left edge
+      this.ctx.fillStyle = locked ? '#475569' : branchColor;
+      this.ctx.fillRect(cardX, cardY, 4, cardH);
 
-      this.ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      this.ctx.fillRect(cardX + 10, cardY + 12, 42, 40);
-      this.ctx.strokeStyle = badgeColor;
+      // Recessed Icon Socket
+      const sockX = cardX + 12;
+      const sockY = cardY + 9;
+      const sockW = 50;
+      const sockH = 50;
+
+      this.ctx.fillStyle = '#030712';
+      this.ctx.fillRect(sockX, sockY, sockW, sockH);
+      this.ctx.strokeStyle = locked ? '#1e293b' : branchColor;
       this.ctx.lineWidth = 1.2;
-      this.ctx.strokeRect(cardX + 10, cardY + 12, 42, 40);
+      this.ctx.strokeRect(sockX, sockY, sockW, sockH);
 
-      EquipmentVisualRenderer.renderUpgradeIcon(this.ctx, definition.id, cardX + 13, cardY + 15, 34, locked ? 0.3 : 1);
-      this.ctx.fillStyle = badgeColor; this.ctx.font = 'bold 9px monospace'; this.ctx.textAlign = 'center';
-      this.ctx.fillText(`${definition.branch}${definition.tier}`, cardX + 31, cardY + 59);
+      // Render authentic illustrated equipment artwork
+      EquipmentVisualRenderer.renderUpgradeIcon(
+        this.ctx,
+        definition.id,
+        sockX + 5,
+        sockY + 5,
+        40,
+        locked ? 0.3 : 1
+      );
 
-      // Name & Tier
+      // Branch tag pill on bottom-right of icon socket
+      this.ctx.fillStyle = 'rgba(2, 6, 23, 0.9)';
+      this.ctx.fillRect(sockX + sockW - 20, sockY + sockH - 12, 19, 11);
+      this.ctx.fillStyle = locked ? '#64748b' : branchColor;
+      this.ctx.font = 'bold 8px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText(`${definition.branch}${definition.tier}`, sockX + sockW - 10, sockY + sockH - 3);
+
+      // Name & Variant Tag
       this.ctx.textAlign = 'left';
       this.ctx.fillStyle = locked ? '#64748b' : isSelected ? '#ffffff' : '#f8fafc';
-      this.ctx.font = 'bold 14px system-ui, sans-serif';
-      this.ctx.fillText(definition.name, cardX + 62, cardY + 26);
+      this.ctx.font = '900 13px system-ui, sans-serif';
+      this.ctx.fillText(definition.name, cardX + 70, cardY + 25);
 
-      // Effect text
+      if (definition.variant) {
+        this.ctx.fillStyle = branchColor;
+        this.ctx.font = 'bold 9px monospace';
+        this.ctx.fillText('★ BIẾN THỂ', cardX + 70 + this.ctx.measureText(definition.name).width + 8, cardY + 25);
+      }
+
+      // Effect Text
       this.ctx.fillStyle = locked ? '#475569' : '#cbd5e1';
-      this.ctx.font = '12px system-ui, sans-serif';
-      this.ctx.fillText(definition.effect, cardX + 62, cardY + 48);
+      this.ctx.font = '11px system-ui, sans-serif';
+      this.ctx.fillText(definition.effect, cardX + 70, cardY + 47);
 
-      // Status pill / action text on the right
-      this.ctx.textAlign = 'right';
+      // Status Pill / Action Button on the Right
+      const btnW = 124;
+      const btnH = 26;
+      const btnX = cardX + cardW - btnW - 12;
+      const btnY = cardY + (cardH - btnH) / 2;
+
+      this.ctx.textAlign = 'center';
       if (locked) {
+        this.ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+        this.ctx.fillRect(btnX, btnY, btnW, btnH);
+        this.ctx.strokeStyle = '#334155';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(btnX, btnY, btnW, btnH);
+
         this.ctx.fillStyle = '#64748b';
-        this.ctx.font = 'bold 11px system-ui, sans-serif';
-        this.ctx.fillText('🔒 CẦN UY TÍN 2', cardX + cardW - 14, cardY + 36);
+        this.ctx.font = 'bold 10px system-ui, sans-serif';
+        this.ctx.fillText('🔒 CẦN UY TÍN 2', btnX + btnW / 2, btnY + 17);
       } else if (equipped) {
-        this.ctx.fillStyle = '#86efac';
-        this.ctx.font = 'bold 12px system-ui, sans-serif';
-        this.ctx.fillText('✓ ĐANG TRANG BỊ', cardX + cardW - 14, cardY + 36);
+        this.ctx.fillStyle = 'rgba(34, 197, 94, 0.2)';
+        this.ctx.fillRect(btnX, btnY, btnW, btnH);
+        this.ctx.strokeStyle = '#22c55e';
+        this.ctx.lineWidth = 1.2;
+        this.ctx.strokeRect(btnX, btnY, btnW, btnH);
+
+        this.ctx.fillStyle = '#4ade80';
+        this.ctx.font = '900 10px system-ui, sans-serif';
+        this.ctx.fillText('✓ ĐANG TRANG BỊ', btnX + btnW / 2, btnY + 17);
       } else if (owned) {
-        this.ctx.fillStyle = definition.variant ? '#67e8f9' : '#86efac';
-        this.ctx.font = 'bold 12px system-ui, sans-serif';
-        this.ctx.fillText(definition.variant ? '[ E ] TRANG BỊ' : '✓ ĐÃ KÍCH HOẠT', cardX + cardW - 14, cardY + 36);
+        this.ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+        this.ctx.fillRect(btnX, btnY, btnW, btnH);
+        this.ctx.strokeStyle = '#0284c7';
+        this.ctx.lineWidth = 1.2;
+        this.ctx.strokeRect(btnX, btnY, btnW, btnH);
+
+        this.ctx.fillStyle = '#38bdf8';
+        this.ctx.font = '900 10px system-ui, sans-serif';
+        this.ctx.fillText(definition.variant ? '[ E ] TRANG BỊ' : '✓ ĐÃ MỞ KHÓA', btnX + btnW / 2, btnY + 17);
       } else {
         const canAfford = snapshot.parts >= definition.cost;
-        this.ctx.fillStyle = canAfford ? '#fb923c' : '#ef4444';
-        this.ctx.font = 'bold 13px monospace';
-        this.ctx.fillText(`⚙ ${definition.cost} [E] MUA`, cardX + cardW - 14, cardY + 36);
+        this.ctx.fillStyle = canAfford ? 'rgba(249, 115, 22, 0.2)' : 'rgba(239, 68, 68, 0.15)';
+        this.ctx.fillRect(btnX, btnY, btnW, btnH);
+        this.ctx.strokeStyle = canAfford ? '#f97316' : '#ef4444';
+        this.ctx.lineWidth = 1.2;
+        this.ctx.strokeRect(btnX, btnY, btnW, btnH);
+
+        this.ctx.fillStyle = canAfford ? '#fbbf24' : '#f87171';
+        this.ctx.font = '900 11px monospace';
+        this.ctx.fillText(`⚙ ${definition.cost} [ E ] MUA`, btnX + btnW / 2, btnY + 17);
       }
+
+      this.ctx.restore();
     });
 
-    // Footer Help Bar
-    this.ctx.fillStyle = '#0f172a';
-    this.ctx.fillRect(x, y + h - 46, w, 46);
-    this.ctx.strokeStyle = '#334155';
+    // Footer Control Bar
+    const footerY = y + h - 42;
+    this.ctx.fillStyle = '#050a14';
+    this.ctx.fillRect(x + 2, footerY, w - 4, 40);
+    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    this.ctx.lineWidth = 1;
     this.ctx.beginPath();
-    this.ctx.moveTo(x, y + h - 46);
-    this.ctx.lineTo(x + w, y + h - 46);
+    this.ctx.moveTo(x, footerY);
+    this.ctx.lineTo(x + w, footerY);
     this.ctx.stroke();
 
-    this.ctx.font = '13px system-ui, sans-serif';
+    this.ctx.font = 'bold 11px system-ui, sans-serif';
     this.ctx.fillStyle = '#94a3b8';
     this.ctx.textAlign = 'center';
     this.ctx.fillText(
-      '[A / D / W / S] Di chuyển  •  [E / Enter / Space] Mua / Trang bị  •  [Esc] Đóng Bàn Đồ Nghề',
+      '[ W / S hoặc ↑ / ↓ ] Chọn trang bị   •   [ A / D hoặc ← / → ] Chuyển cột   •   [ E / Space / Enter ] Mua hoặc Trang bị   •   [ ESC ] Đóng',
       x + w / 2,
-      y + h - 18
+      footerY + 25
     );
 
     this.ctx.restore();
