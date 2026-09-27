@@ -137,7 +137,14 @@ export class Stage1Scene implements Scene {
         this.player.y + this.player.height / 2
       );
     };
-    this.lootSystem.onPickupCollected = (type) => this.audio.play(pickupSfx(type));
+    this.lootSystem.onPickupCollected = (type) => {
+      this.audio.play(pickupSfx(type));
+      this.gameFeel.triggerLootCollected(
+        this.player.x + this.player.width / 2,
+        this.player.y + 10,
+        type
+      );
+    };
   }
 
   public init(): void {
@@ -204,11 +211,6 @@ export class Stage1Scene implements Scene {
 
     // Capture initial checkpoint for Zone A
     this.captureEncounterCheckpoint('A');
-
-    this.dialogue.start([
-      { speaker: 'HỘI KHỜ', text: 'Địa chỉ ở cuối hẻm. Cứ giữ bình tĩnh, giữ kiện hàng… rồi tìm đường ra.', tone: 'neutral' },
-      { speaker: 'HỆ THỐNG', text: 'Hạ kẻ chặn đường để mở cổng từng khu vực. Momentum đầy sẽ kích hoạt Tuyệt Kỹ [Q].', tone: 'warning' },
-    ]);
   }
 
   public captureEncounterCheckpoint(zoneId: 'A' | 'B' | 'C' | 'D' | 'E'): void {
@@ -394,15 +396,17 @@ export class Stage1Scene implements Scene {
     const objective = ObjectiveSystem.getInstance();
 
     if (this.dialogue.isActive()) {
-      if (input.isJustPressed('cancel')) {
+      if (
+        input.isJustPressed('cancel') ||
+        input.isJustPressed('moveLeft') ||
+        input.isJustPressed('moveRight') ||
+        input.isJustPressed('jump') ||
+        input.isJustPressed('dodge')
+      ) {
         this.dialogue.skip();
       } else if (
         input.isJustPressed('interact') ||
-        input.isJustPressed('attack') ||
-        input.isJustPressed('jump') ||
-        input.isJustPressed('moveLeft') ||
-        input.isJustPressed('moveRight') ||
-        input.isJustPressed('dodge')
+        input.isJustPressed('attack')
       ) {
         this.dialogue.advance();
       }

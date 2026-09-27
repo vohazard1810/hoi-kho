@@ -405,21 +405,27 @@ export class EquipmentVisualRenderer {
       }
 
       // Backlit Keybind Cap (Top-Right)
+      const isTapeEmpty = slot.branch === 'K' && (player?.tapeCharges ?? 3) === 0;
       const keycapText = isOnCooldown
         ? `${cooldown.toFixed(1)}s`
+        : isTapeEmpty
+        ? `HỒI ${(Math.max(0.1, 4.0 - (player?.tapeRechargeTimer ?? 0))).toFixed(0)}s`
         : ready
         ? '[Q!]'
         : isAirDropSlot
         ? '[W+J!]'
+        : slot.branch === 'K' && player?.tapeCharges !== undefined
+        ? `[K] ${player.tapeCharges}/3`
         : `[${slot.branch}]`;
 
-      ctx.fillStyle = isOnCooldown ? '#ef4444' : ready ? '#fbbf24' : isAirDropSlot ? '#fef08a' : '#ffffff';
+      ctx.fillStyle = isOnCooldown || isTapeEmpty ? '#ef4444' : ready ? '#fbbf24' : isAirDropSlot ? '#fef08a' : '#ffffff';
       ctx.font = '900 11px monospace';
       ctx.textAlign = 'right';
       ctx.fillText(keycapText, sx + slotW - 6, sy + 16);
 
       // Vietnamese Skill Label (Bottom-Right)
-      ctx.fillStyle = isOnCooldown
+      const skillLabel = slot.branch === 'K' && isTapeEmpty ? 'HẾT CUỘN!' : slot.label;
+      ctx.fillStyle = isOnCooldown || isTapeEmpty
         ? '#94a3b8'
         : slot.tier2
         ? '#67e8f9'
@@ -429,7 +435,7 @@ export class EquipmentVisualRenderer {
         ? '#fdba74'
         : '#cbd5e1';
       ctx.font = 'bold 10px system-ui, sans-serif';
-      ctx.fillText(slot.label, sx + slotW - 6, sy + 34);
+      ctx.fillText(skillLabel, sx + slotW - 6, sy + 34);
     });
 
     ctx.restore();

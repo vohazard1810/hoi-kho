@@ -49,15 +49,21 @@ export class Player extends Entity {
   private dodgeCooldownTimer: number = 0;
   private projectileCooldownTimer: number = 0;
 
+  // Tape Charges (Balanced courier ammo)
+  public tapeCharges: number = 3;
+  public maxTapeCharges: number = 3;
+  public tapeRechargeTimer: number = 0;
+
   public get dodgeCooldownRemaining(): number { return Math.max(0, this.dodgeCooldownTimer); }
   public get tapeCooldownRemaining(): number { return Math.max(0, this.projectileCooldownTimer); }
 
   // Jump physics helpers
   private coyoteTimer: number = 0;
   private jumpBufferTimer: number = 0;
+  private attackBufferTimer: number = 0;
   private wasInAir: boolean = false;
 
-  // Landing transition timer (visual only, 2 frames @ 10fps = 0.2s)
+  // Landing transition timer (visual only, 0.08s for snappy locomotion)
   public landingTimer: number = 0;
 
   // Melee combo state
@@ -116,12 +122,19 @@ export class Player extends Entity {
     this.projectileCooldownTimer = 0;
     this.coyoteTimer = 0;
     this.jumpBufferTimer = 0;
+    this.attackBufferTimer = 0;
+    this.tapeCharges = this.maxTapeCharges;
+    this.tapeRechargeTimer = 0;
     this.wasInAir = false;
     this.landingTimer = 0;
     this.slipTimer = 0;
     this.previousVisualState = 'idle';
     this.currentVisualState = 'idle';
     this.animTime = 0;
+  }
+
+  public addTapeCharges(amount: number): void {
+    this.tapeCharges = Math.min(this.maxTapeCharges, this.tapeCharges + amount);
   }
 
   public override getHurtbox(): Hurtbox {
@@ -131,7 +144,11 @@ export class Player extends Entity {
       width: this.width - 8,
       height: this.height - 4,
       ownerId: this.id,
-      isInvulnerable: this.isInvulnerable || this.actionState === 'DODGE' || this.actionState === 'KO',
+      isInvulnerable:
+        this.isInvulnerable ||
+        this.actionState === 'DODGE' ||
+        this.actionState === 'KO' ||
+        (this.actionState === 'ATTACK' && this.comboStep === 'ULTIMATE'),
     };
   }
 
@@ -253,20 +270,21 @@ export class Player extends Entity {
 
     // Jump buffer check (W or Space)
     if (input.isJustPressed('jump')) {
-      this.jumpBufferTimer = BALANCE.JUMP_BUFFER;
+      this.jumpBufferTimer = Math.max(BALANCE.JUMP_BUFFER, 0.22);
     }
 
-    // Dodge (L)
+    // Dodge (L) - high-priority escape
     if (input.isJustPressed('dodge') && this.dodgeCooldownTimer <= 0 && this.actionState !== 'DODGE') {
       this.landingTimer = 0;
       this.startDodge();
       return;
     }
 
-    // Projectile Tape (K)
+    // Projectile Tape (K) - restricted by tape ammo charges
     if (
       input.isJustPressed('projectile') &&
       this.projectileCooldownTimer <= 0 &&
+      this.tapeCharges > 0 &&
       this.actionState !== 'DODGE' &&
       this.actionState !== 'ATTACK'
     ) {
@@ -274,7 +292,7 @@ export class Player extends Entity {
       this.shootProjectile();
     }
 
-    // Ultimate (Q)
+    // Ultimate (Q) - explosive courier surge
     if (
       input.isJustPressed('ultimate') &&
       this.momentum >= BALANCE.ULTIMATE_COST &&
@@ -285,23 +303,29 @@ export class Player extends Entity {
       return;
     }
 
-    // Melee combo (J)
+    // Melee combo (J) with input buffering & seamless combo chaining
     if (input.isJustPressed('attack')) {
       this.landingTimer = 0;
+      this.attackBufferTimer = 0.22;
       if (this.actionState === 'ATTACK') {
-        // If in RECOVERY of J1 or J2, cancel recovery immediately into next attack
+        // If in RECOVERY, cancel recovery immediately into next attack
         if (this.attackPhase === 'RECOVERY') {
+          this.attackBufferTimer = 0;
           if (this.comboStep === 'J1') {
             this.startMeleeCombo('J2');
             return;
           } else if (this.comboStep === 'J2') {
             this.startMeleeCombo('J3');
             return;
+          } else if (this.comboStep === 'J3') {
+            this.startMeleeCombo('J1');
+            return;
           }
         }
         // Buffer next combo step if in startup/active window
         this.comboBuffer = true;
       } else if (this.actionState !== 'DODGE') {
+        this.attackBufferTimer = 0;
         if (!this.isGrounded) {
           this.startAirAttack();
         } else {
@@ -325,6 +349,7 @@ export class Player extends Entity {
   }
 
   private shootProjectile(): void {
+    this.tapeCharges = Math.max(0, this.tapeCharges - 1);
     this.projectileCooldownTimer = BALANCE.TAPE_COOLDOWN;
     const spawnX = this.facing === 'right' ? this.x + this.width + 4 : this.x - BALANCE.TAPE_WIDTH - 4;
     const spawnY = this.y + 20;
@@ -360,7 +385,8 @@ export class Player extends Entity {
     this.attackPhaseTimer = BALANCE.ULTIMATE_STARTUP;
     this.currentHitboxId = `hb_ult_${Date.now()}`;
     this.animTime = 0; // Reset animation to frame 0
-    this.vx = 0;
+    // Dynamic forward thrust burst
+    this.vx = this.facing === 'right' ? 580 : -580;
 
     if (this.onUltimateActivated) {
       this.onUltimateActivated();
@@ -377,8 +403,8 @@ export class Player extends Entity {
     this.onMeleeStarted?.(step);
 
     // On ground with no active motion, give a small forward step
-    if (this.isGrounded && Math.abs(this.vx) < 40) {
-      const lunge = step === 'J3' ? 100 : 50;
+    if (this.isGrounded && Math.abs(this.vx) < 50) {
+      const lunge = step === 'J3' ? 140 : step === 'J2' ? 85 : 65;
       this.vx = this.facing === 'right' ? lunge : -lunge;
     }
     // In air, airborne vx and vy are completely preserved!
@@ -401,7 +427,19 @@ export class Player extends Entity {
     if (this.dodgeCooldownTimer > 0) this.dodgeCooldownTimer -= dt;
     if (this.projectileCooldownTimer > 0) this.projectileCooldownTimer -= dt;
     if (this.jumpBufferTimer > 0) this.jumpBufferTimer -= dt;
+    if (this.attackBufferTimer > 0) this.attackBufferTimer -= dt;
     if (this.slipTimer > 0) this.slipTimer = Math.max(0, this.slipTimer - dt);
+
+    // Automatic tape recharge: 1 roll every 4.0s up to max 3
+    if (this.tapeCharges < this.maxTapeCharges) {
+      this.tapeRechargeTimer += dt;
+      if (this.tapeRechargeTimer >= 4.0) {
+        this.tapeRechargeTimer = 0;
+        this.tapeCharges = Math.min(this.maxTapeCharges, this.tapeCharges + 1);
+      }
+    } else {
+      this.tapeRechargeTimer = 0;
+    }
 
     if (this.invulnerableTimer > 0) {
       this.invulnerableTimer -= dt;
@@ -420,11 +458,11 @@ export class Player extends Entity {
     if (this.wasInAir && this.isGrounded) {
       if (this.actionState === 'ATTACK' && this.comboStep === 'J3') {
         this.attackPhase = 'RECOVERY';
-        this.attackPhaseTimer = 0.15;
-        this.landingTimer = 0.2;
+        this.attackPhaseTimer = 0.08;
+        this.landingTimer = 0.08;
         this.onLanded?.();
       } else if (this.locomotionState === 'FALL' && this.actionState === 'NONE') {
-        this.landingTimer = 0.2; // 2 frames @ 10fps
+        this.landingTimer = 0.08;
         this.onLanded?.();
       }
     }
@@ -476,13 +514,21 @@ export class Player extends Entity {
     // Jump execution (Coyote Time + Jump Buffer)
     if (this.jumpBufferTimer > 0 && (this.isGrounded || this.coyoteTimer > 0)) {
       if (this.actionState !== 'HURT' && this.actionState !== 'KO') {
-        this.vy = -BALANCE.PLAYER_JUMP_FORCE;
-        this.isGrounded = false;
-        this.coyoteTimer = 0;
-        this.jumpBufferTimer = 0;
-        this.locomotionState = 'JUMP';
-        this.landingTimer = 0;
-        this.onJumpStarted?.();
+        // Instant jump cancel out of attack recovery
+        if (this.actionState === 'ATTACK' && this.attackPhase === 'RECOVERY') {
+          this.actionState = 'NONE';
+          this.comboStep = 'NONE';
+          this.attackPhase = 'NONE';
+        }
+        if (this.actionState === 'NONE') {
+          this.vy = -BALANCE.PLAYER_JUMP_FORCE;
+          this.isGrounded = false;
+          this.coyoteTimer = 0;
+          this.jumpBufferTimer = 0;
+          this.locomotionState = 'JUMP';
+          this.landingTimer = 0;
+          this.onJumpStarted?.();
+        }
       }
     }
 
@@ -512,6 +558,13 @@ export class Player extends Entity {
       return;
     }
 
+    // Snappy movement cancel in late attack recovery
+    if (this.actionState === 'ATTACK' && this.attackPhase === 'RECOVERY' && this.attackPhaseTimer < 0.12 && moveAxis !== 0) {
+      this.actionState = 'NONE';
+      this.comboStep = 'NONE';
+      this.attackPhase = 'NONE';
+    }
+
     const slipFactor = this.slipTimer > 0 ? 0.75 : 1.0;
     if (moveAxis !== 0) {
       this.landingTimer = 0;
@@ -532,6 +585,10 @@ export class Player extends Entity {
   private updateAttack(dt: number): void {
     this.attackPhaseTimer -= dt;
 
+    if (this.comboStep === 'ULTIMATE' && this.attackPhase === 'ACTIVE') {
+      this.vx *= 0.94;
+    }
+
     if (this.attackPhaseTimer <= 0) {
       if (this.attackPhase === 'STARTUP') {
         this.attackPhase = 'ACTIVE';
@@ -546,13 +603,18 @@ export class Player extends Entity {
         else if (this.comboStep === 'J3') this.attackPhaseTimer = BALANCE.J3_RECOVERY;
         else if (this.comboStep === 'ULTIMATE') this.attackPhaseTimer = BALANCE.ULTIMATE_RECOVERY;
       } else if (this.attackPhase === 'RECOVERY') {
-        // Check if combo can proceed to next step
-        if (this.comboBuffer) {
+        // Check if combo can proceed to next step or buffered attack
+        if (this.comboBuffer || this.attackBufferTimer > 0) {
+          this.comboBuffer = false;
+          this.attackBufferTimer = 0;
           if (this.comboStep === 'J1') {
             this.startMeleeCombo('J2');
             return;
           } else if (this.comboStep === 'J2') {
             this.startMeleeCombo('J3');
+            return;
+          } else if (this.comboStep === 'J3') {
+            this.startMeleeCombo('J1');
             return;
           }
         }

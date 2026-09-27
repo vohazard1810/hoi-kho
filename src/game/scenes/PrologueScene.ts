@@ -7,7 +7,7 @@ export const PROLOGUE_BEATS = [
   { kicker: 'SÀI GÒN • CUỐI THÁNG', title: 'NHỮNG CON SỐ KHÔNG BIẾT THƯƠNG', body: 'Tiền nhà. Tiền thuốc. Những khoản nợ cứ dài hơn sau mỗi lần Hội Khờ mở ví.' },
   { kicker: 'TRÊN CẦU • CHẠNG VẠNG', title: 'CHƯA BIẾT NGÀY MAI ĐI ĐÂU', body: 'Khờ đi bộ thật lâu cho đầu óc nhẹ bớt. Cậu chỉ cần một cơ hội để bắt đầu lại.' },
   { kicker: 'RỒI — BỘP!', title: 'MỘT TỜ GIẤY BAY THẲNG VÀO MẶT', body: '“SXP tuyển shipper. Nhận việc ngay. Thu nhập theo năng lực.” Đúng lúc đến mức đáng ngờ.' },
-  { kicker: 'TRẠM GIAO HÀNG SXP', title: 'GIAO TỪNG ĐƠN. TRẢ TỪNG KHOẢN.', body: 'Cô Ba đưa Khờ bộ đồng phục cũ, một chiếc máy quét và đơn hàng đầu tiên.' },
+  { kicker: 'TRẠM GIAO HÀNG SXP • ĐIỂM XUẤT PHÁT', title: 'GIAO TỪNG ĐƠN • TRẢ TỪNG KHOẢN • KHÔNG LÙI BƯỚC!', body: 'Cô Ba trao nón cam, chìa khóa và kiện hàng đầu tiên: "Hẻm sâu chó dữ, giang hồ quậy phá... nhưng shipper SXP là giao tới nơi về tới chốn!"' },
 ] as const;
 
 export function advancePrologueBeat(current: number): number { return current + 1; }

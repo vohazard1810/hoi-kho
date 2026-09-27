@@ -71,11 +71,11 @@ export class GameFeelSystem {
 
   /** Activation feedback is visible even when the ultimate does not hit a target. */
   public triggerUltimateActivation(x: number, y: number): void {
-    this.ultimatePulses.push({ x, y, life: 0.65, maxLife: 0.65, maxRadius: 240 });
-    this.shakeRequest = { intensity: 7.5, duration: 0.28 };
-    this.spawnImpact(x, y, 32, '#F59E0B');
-    this.spawnImpact(x, y, 16, '#FBBF24');
-    this.addComicText('💥 HỎA TỐC BƯU CỤC! 💥', x, y - 48, '#FBBF24', 26);
+    this.ultimatePulses.push({ x, y, life: 0.65, maxLife: 0.65, maxRadius: 260 });
+    this.shakeRequest = { intensity: 12, duration: 0.35 };
+    this.spawnImpact(x, y, 48, '#F59E0B');
+    this.spawnImpact(x, y, 24, '#FBBF24');
+    this.addComicText('⚡ HỎA TỐC GIAO HÀNG! ⚡', x, y - 48, '#FBBF24', 28);
   }
 
   public triggerMeleeHit(combo: AttackComboStep, targetIds: string[], x: number, y: number): void {
@@ -87,10 +87,10 @@ export class GameFeelSystem {
     if (combo === 'J3') this.audio?.duckMusic?.(-3, 175);
     if (combo === 'ULTIMATE') this.audio?.duckMusic?.(-4, 230);
     const profile = combo === 'ULTIMATE'
-      ? { stop: 0.10, shake: 8, duration: 0.2, particles: 20 }
-      : combo === 'J3' ? { stop: 0.08, shake: 5, duration: 0.16, particles: 12 }
-      : combo === 'J2' ? { stop: 0.05, shake: 3, duration: 0.12, particles: 8 }
-      : { stop: 0.04, shake: 2, duration: 0.1, particles: 6 };
+      ? { stop: 0.12, shake: 13, duration: 0.28, particles: 32 }
+      : combo === 'J3' ? { stop: 0.08, shake: 6, duration: 0.18, particles: 14 }
+      : combo === 'J2' ? { stop: 0.05, shake: 3.5, duration: 0.12, particles: 9 }
+      : { stop: 0.04, shake: 2.2, duration: 0.1, particles: 6 };
     this.hitStopRemaining = Math.max(this.hitStopRemaining, profile.stop);
     for (const id of targetIds) this.flashes.set(id, 0.09);
     this.shakeRequest = { intensity: profile.shake, duration: profile.duration };
@@ -145,8 +145,19 @@ export class GameFeelSystem {
     this.spawnImpact(x, y, rearHit ? 10 : 6, rearHit ? '#FB7185' : '#D6A35F');
   }
 
-  public triggerLootCollected(x: number, y: number): void {
+  public triggerLootCollected(x: number, y: number, type?: string): void {
     this.spawnImpact(x, y, 8, '#FBBF24');
+    if (type === 'HEALTH') {
+      this.addComicText('+25 HP CƠM TẤM! 🍚', x, y - 24, '#4ADE80', 16);
+    } else if (type === 'MOMENTUM') {
+      this.addComicText('+30 Q BÒ HÚC! ⚡', x, y - 24, '#38BDF8', 16);
+    } else if (type === 'PARCEL_REPAIR') {
+      this.addComicText('+GIA CỐ KIỆN! 📦', x, y - 24, '#FDE047', 16);
+    } else if (type === 'BONUS_REWARD') {
+      this.addComicText('+TIỀN TIP! 💵', x, y - 24, '#FBBF24', 16);
+    } else if (type === 'PARTS') {
+      this.addComicText('+LINH KIỆN SXP! ⚙️', x, y - 24, '#A78BFA', 16);
+    }
   }
 
   public triggerPerfectDodge(x: number, y: number): void {

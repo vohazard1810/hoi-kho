@@ -348,24 +348,29 @@ export class PlaceholderRenderer {
       ctx.globalAlpha = 0.4;
     }
 
-    // Dog Body: BROWN RECTANGLE
-    ctx.fillStyle = dog.state === 'HURT' ? '#ef4444' : '#854d0e';
+    // Dog Body: URBAN ASPHALT HOUND
+    ctx.fillStyle = dog.state === 'HURT' ? '#ef4444' : '#292524';
     ctx.fillRect(pos.x, pos.y, dog.width, dog.height);
 
-    ctx.strokeStyle = '#713f12';
+    ctx.strokeStyle = '#1c1917';
     ctx.lineWidth = 2;
     ctx.strokeRect(pos.x, pos.y, dog.width, dog.height);
 
     // Snout / Facing
-    ctx.fillStyle = '#a16207';
+    ctx.fillStyle = '#78350f';
     const snoutX = dog.facing === 'right' ? pos.x + dog.width - 8 : pos.x;
     ctx.fillRect(snoutX, pos.y + 12, 8, 12);
 
+    // Amber street eyes
+    ctx.fillStyle = '#f59e0b';
+    const dogEyeX = dog.facing === 'right' ? pos.x + dog.width - 12 : pos.x + 6;
+    ctx.fillRect(dogEyeX, pos.y + 8, 4, 4);
+
     // Name label
-    ctx.fillStyle = '#cbd5e1';
-    ctx.font = '10px system-ui, sans-serif';
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = 'bold 10px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Chó Dữ', pos.x + dog.width / 2, pos.y - 8);
+    ctx.fillText('Chó Dữ Hẻm', pos.x + dog.width / 2, pos.y - 8);
 
     // Telegraph visual cue
     if (dog.state === 'TELEGRAPH') {
@@ -397,35 +402,35 @@ export class PlaceholderRenderer {
       ctx.globalAlpha = 0.4;
     }
 
-    // Rival Body: PURPLE RECTANGLE
-    ctx.fillStyle = rival.state === 'HURT' ? '#ef4444' : '#9333ea';
+    // Rival Body: CRIMSON COURIER RACING JACKET
+    ctx.fillStyle = rival.state === 'HURT' ? '#ef4444' : '#be123c';
     ctx.fillRect(pos.x, pos.y, rival.width, rival.height);
 
-    ctx.strokeStyle = '#6b21a8';
+    ctx.strokeStyle = '#881337';
     ctx.lineWidth = 2;
     ctx.strokeRect(pos.x, pos.y, rival.width, rival.height);
 
-    // Facing indicator
-    ctx.fillStyle = '#f3e8ff';
+    // Cyan High-Tech Visor / Eye
+    ctx.fillStyle = '#38bdf8';
     const eyeX = rival.facing === 'right' ? pos.x + rival.width - 10 : pos.x + 4;
     ctx.fillRect(eyeX, pos.y + 12, 6, 6);
 
     // Name label
-    ctx.fillStyle = '#e9d5ff';
+    ctx.fillStyle = '#fecdd3';
     ctx.font = 'bold 11px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Shipper Đối Thủ', pos.x + rival.width / 2, pos.y - 10);
 
     // Attack state visual cue
     if (rival.state === 'ATTACK_STARTUP') {
-      ctx.fillStyle = '#ec4899';
+      ctx.fillStyle = '#fb7185';
       ctx.font = 'bold 16px monospace';
       ctx.fillText('⚠️', pos.x + rival.width / 2, pos.y - 24);
     } else if (rival.state === 'ATTACK_ACTIVE') {
       const hitbox = rival.getActiveHitbox();
       if (hitbox) {
         const hbPos = camera.worldToScreen(hitbox.x + hitbox.width / 2, hitbox.y + hitbox.height / 2);
-        ctx.strokeStyle = '#db2777';
+        ctx.strokeStyle = '#e11d48';
         ctx.lineWidth = 5;
         ctx.beginPath();
         ctx.arc(hbPos.x, hbPos.y, Math.max(hitbox.width, hitbox.height) * 0.48, -0.9, 0.9);
@@ -438,7 +443,7 @@ export class PlaceholderRenderer {
       const hpPct = Math.max(0, rival.hp / rival.maxHp);
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(pos.x, pos.y - 6, rival.width, 4);
-      ctx.fillStyle = '#a855f7';
+      ctx.fillStyle = '#f43f5e';
       ctx.fillRect(pos.x, pos.y - 6, rival.width * hpPct, 4);
     }
 
@@ -453,21 +458,25 @@ export class PlaceholderRenderer {
       ctx.globalAlpha = 0.4;
     }
 
-    // Miniboss Body: DARK RED-GRAY RECTANGLE
-    ctx.fillStyle = thug.state === 'HURT' ? '#f87171' : '#7f1d1d';
+    // Miniboss Body: HEAVY TACTICAL SLATE VEST
+    ctx.fillStyle = thug.state === 'HURT' ? '#f87171' : '#1e293b';
     ctx.fillRect(pos.x, pos.y, thug.width, thug.height);
 
-    ctx.strokeStyle = '#991b1b';
+    ctx.strokeStyle = '#0f172a';
     ctx.lineWidth = 3;
     ctx.strokeRect(pos.x, pos.y, thug.width, thug.height);
 
-    // Shoulder spikes / armor
-    ctx.fillStyle = '#450a0a';
-    ctx.fillRect(pos.x - 4, pos.y + 8, 8, 14);
-    ctx.fillRect(pos.x + thug.width - 4, pos.y + 8, 8, 14);
+    // Red Knuckle Bandana / Accent
+    ctx.fillStyle = '#b91c1c';
+    ctx.fillRect(pos.x + 2, pos.y + 6, thug.width - 4, 6);
+
+    // Steel shoulder plates
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(pos.x - 4, pos.y + 12, 8, 14);
+    ctx.fillRect(pos.x + thug.width - 4, pos.y + 12, 8, 14);
 
     // Label: MINIBOSS ĐẦU GẤU
-    ctx.fillStyle = '#fecaca';
+    ctx.fillStyle = '#fca5a5';
     ctx.font = 'bold 10px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('MINIBOSS', pos.x + thug.width / 2, pos.y - 20);
@@ -516,18 +525,23 @@ export class PlaceholderRenderer {
       ctx.globalAlpha = 0.4;
     }
 
-    // Boss Body: LARGE PURPLE/CRIMSON RECTANGLE
-    ctx.fillStyle = bossDog.state === 'HURT' ? '#f87171' : bossDog.phase === 2 ? '#581c87' : '#701a75';
+    // Boss Body: MIDNIGHT APEX HOUND (ENRAGED PHASE 2: TWILIGHT RAGE)
+    ctx.fillStyle = bossDog.state === 'HURT' ? '#f87171' : bossDog.phase === 2 ? '#312e81' : '#18181b';
     ctx.fillRect(pos.x, pos.y, bossDog.width, bossDog.height);
 
-    ctx.strokeStyle = bossDog.phase === 2 ? '#e11d48' : '#a21caf';
+    ctx.strokeStyle = bossDog.phase === 2 ? '#ef4444' : '#52525b';
     ctx.lineWidth = 3;
     ctx.strokeRect(pos.x, pos.y, bossDog.width, bossDog.height);
 
-    // Collar / Spikes
-    ctx.fillStyle = '#fbbf24';
+    // Studded Spiked Collar
+    ctx.fillStyle = bossDog.phase === 2 ? '#ef4444' : '#ea580c';
     const collarX = bossDog.facing === 'right' ? pos.x + bossDog.width - 18 : pos.x + 8;
     ctx.fillRect(collarX, pos.y + 12, 10, bossDog.height - 24);
+
+    // Glowing Golden Eyes
+    ctx.fillStyle = '#eab308';
+    const bossEyeX = bossDog.facing === 'right' ? pos.x + bossDog.width - 24 : pos.x + 18;
+    ctx.fillRect(bossEyeX, pos.y + 16, 6, 6);
 
     // 6th stack red aura outline (does not tint solid red)
     if (bossDog.antiSpamLevel >= 6) {
