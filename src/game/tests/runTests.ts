@@ -23,6 +23,7 @@ import { runV19Tests } from './v19Tests';
 import { runV19_1Tests } from './v19_1Tests';
 import { runV19_2Tests } from './v19_2Tests';
 import { runV19_3Tests } from './v19_3Tests';
+import { runStreetEnemiesTests } from './streetEnemiesTests';
 
 console.log('====================================================');
 console.log('   NỢ ƠI, TỚI ĐÂY! — RUNTIME TEST RUNNER   ');
@@ -298,6 +299,22 @@ for (const res of worldGeometry.results) {
 console.log('\n--- 9. RIVAL & THUG PRODUCTION TESTS ---');
 const enemyProduction = runEnemyProductionTests();
 for (const res of enemyProduction.results) {
+  totalExecuted++;
+  if (res.passed) {
+    totalPassed++;
+    console.log(`  [PASS] ${res.testName}`);
+    console.log(`         ${res.message}`);
+  } else {
+    totalFailed++;
+    console.log(`  [FAIL] ${res.testName}`);
+    console.log(`         ${res.message}`);
+  }
+}
+
+// 10. Stage 1 Street Enemies & Encounter Integration Tests
+console.log('\n--- 10. STAGE 1 STREET ENEMIES & ENCOUNTER INTEGRATION TESTS ---');
+const streetEnemies = runStreetEnemiesTests();
+for (const res of streetEnemies.results) {
   totalExecuted++;
   if (res.passed) {
     totalPassed++;

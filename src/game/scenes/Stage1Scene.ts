@@ -11,6 +11,9 @@ import { Player } from '../entities/Player';
 import { Projectile } from '../entities/Projectile';
 import { Rival } from '../entities/Rival';
 import { Thug } from '../entities/Thug';
+import { AlleyRat } from '../entities/AlleyRat';
+import { SaboteurShipper } from '../entities/SaboteurShipper';
+import { AlleyGuard } from '../entities/AlleyGuard';
 import { Renderer, StageHazardOverlay } from '../rendering/Renderer';
 import { CollisionSystem } from '../systems/CollisionSystem';
 import { CombatSystem } from '../systems/CombatSystem';
@@ -55,6 +58,10 @@ export class Stage1Scene implements Scene {
   private rivals: Rival[] = [];
   private thugs: Thug[] = [];
   private bossDogs: BossDog[] = [];
+  private rats: AlleyRat[] = [];
+  private saboteurs: SaboteurShipper[] = [];
+  private guards: AlleyGuard[] = [];
+  private bananaTraps: { id: string; x: number; y: number; timer: number }[] = [];
   private projectiles: Projectile[] = [];
   private enemyProjectiles: EnemyProjectile[] = [];
 
@@ -170,20 +177,28 @@ export class Stage1Scene implements Scene {
       this.gameFeel.triggerAirSlam(slamX, slamY);
 
       // AoE damage & knockdown to nearby enemies
-      const slamRadius = 110;
-      const allEnemies: (Dog | Rival | Thug | BossDog)[] = [
+      const slamRadius = 120;
+      const allEnemies: (Dog | Rival | Thug | BossDog | AlleyRat | SaboteurShipper | AlleyGuard)[] = [
         ...this.dogs,
         ...this.rivals,
         ...this.thugs,
         ...this.bossDogs,
+        ...this.rats,
+        ...this.saboteurs,
+        ...this.guards,
       ];
       for (const enemy of allEnemies) {
         if (!enemy.isAlive) continue;
         const ex = enemy.x + enemy.width / 2;
         const ey = enemy.y + enemy.height / 2;
-        if (Math.abs(ex - slamX) <= slamRadius && Math.abs(ey - slamY) <= 60) {
+        if (Math.abs(ex - slamX) <= slamRadius && Math.abs(ey - slamY) <= 70) {
           const knockDir = ex >= slamX ? 1 : -1;
+          const wasShieldBroken = (enemy as any).isShieldBroken;
           enemy.takeDamage(35, 0, knockDir * 240, 150, slamX);
+          if (enemy instanceof AlleyGuard && !wasShieldBroken && enemy.isShieldBroken) {
+            this.audio.play('enemy_ko');
+            this.gameFeel.triggerComicText('VỠ KHIÊN! 💥', enemy.x + 20, enemy.y - 20, '#f97316');
+          }
         }
       }
     };
@@ -212,6 +227,23 @@ export class Stage1Scene implements Scene {
     this.enterFreshStage();
   }
 
+  private initStreetEnemies(): void {
+    this.rats = [
+      new AlleyRat('rat_b1', 1060, 580, 'B'),
+      new AlleyRat('rat_c1', 1650, 580, 'C'),
+    ];
+    const sab = new SaboteurShipper('saboteur_c1', 1840, 546, 'C');
+    sab.onThrowBananaPeel = (x, y) => {
+      this.bananaTraps.push({ id: `peel_${Date.now()}_${Math.random()}`, x, y: 580, timer: 14.0 });
+      this.audio.play('enemy_warning');
+    };
+    this.saboteurs = [sab];
+    this.guards = [
+      new AlleyGuard('guard_d1', 2440, 538, 'D'),
+    ];
+    this.bananaTraps = [];
+  }
+
   public enterFreshStage(): void {
     const objective = ObjectiveSystem.getInstance();
     objective.startDelivery();
@@ -229,6 +261,7 @@ export class Stage1Scene implements Scene {
     this.bossDogs = [];
     this.projectiles = [];
     this.enemyProjectiles = [];
+    this.initStreetEnemies();
     this.droppedLootEnemyIds.clear();
     this.lastEnemyStates.clear();
     this.dialogue.reset();
@@ -366,6 +399,28 @@ export class Stage1Scene implements Scene {
       this.handleEnemySpawn(spawnData);
     }
 
+    // Respawn street enemies according to checkpoint zone
+    if (cp.zoneId === 'A') {
+      this.initStreetEnemies();
+    } else if (cp.zoneId === 'B') {
+      this.rats = this.rats.filter((r) => r.zoneId !== 'B');
+      this.rats.push(new AlleyRat('rat_b1', 1060, 580, 'B'));
+    } else if (cp.zoneId === 'C') {
+      this.rats = this.rats.filter((r) => r.zoneId !== 'C');
+      this.rats.push(new AlleyRat('rat_c1', 1650, 580, 'C'));
+      this.saboteurs = this.saboteurs.filter((s) => s.zoneId !== 'C');
+      const sab = new SaboteurShipper('saboteur_c1', 1840, 546, 'C');
+      sab.onThrowBananaPeel = (x, y) => {
+        this.bananaTraps.push({ id: `peel_${Date.now()}_${Math.random()}`, x, y: 580, timer: 14.0 });
+        this.audio.play('enemy_warning');
+      };
+      this.saboteurs.push(sab);
+      this.bananaTraps = [];
+    } else if (cp.zoneId === 'D') {
+      this.guards = this.guards.filter((g) => g.zoneId !== 'D');
+      this.guards.push(new AlleyGuard('guard_d1', 2440, 538, 'D'));
+    }
+
     this.nearbyPrompt = null;
   }
 
@@ -381,6 +436,7 @@ export class Stage1Scene implements Scene {
     this.perfectDodgeHitboxIds.clear();
     this.isParcelDropped = false;
     this.droppedParcel = null;
+    this.bananaTraps = [];
     this.dogClamp = { active: false, dogId: null, mashRemaining: 0 };
     this.motorbike.active = false;
     this.motorbike.warning = false;
@@ -397,6 +453,10 @@ export class Stage1Scene implements Scene {
     this.rivals = [];
     this.thugs = [];
     this.bossDogs = [];
+    this.rats = [];
+    this.saboteurs = [];
+    this.guards = [];
+    this.bananaTraps = [];
     this.projectiles = [];
     this.enemyProjectiles = [];
     this.droppedLootEnemyIds.clear();
@@ -720,6 +780,33 @@ export class Stage1Scene implements Scene {
             break;
           }
         }
+
+        // Rats gnawing on parcel
+        for (const rat of this.rats) {
+          if (!rat.isAlive || rat.state === 'KO') continue;
+          const ratDist = Math.hypot(rat.x + rat.width / 2 - p.x, rat.y + rat.height / 2 - p.y);
+          if (ratDist < 50 && p.gnawTimer <= 0) {
+            objective.damageParcel(3);
+            p.gnawTimer = 1.0;
+            this.audio.play('parcel_hit');
+            this.gameFeel.triggerComicText('CHUỘT GẶM HÀNG! -3%', p.x, p.y - 20, '#ef4444');
+            break;
+          }
+        }
+
+        // Saboteurs kicking parcel away
+        for (const sab of this.saboteurs) {
+          if (!sab.isAlive || sab.state === 'KO') continue;
+          const sabDist = Math.hypot(sab.x + sab.width / 2 - p.x, sab.y + sab.height / 2 - p.y);
+          if (sabDist < 55 && Math.abs(p.vx) < 50) {
+            p.vx = sab.facing === 'left' ? -200 : 200;
+            p.vy = -140;
+            objective.damageParcel(2);
+            this.audio.play('parcel_hit');
+            this.gameFeel.triggerComicText('GIAN THƯƠNG ĐÁ HÀNG!', p.x, p.y - 22, '#f97316');
+            break;
+          }
+        }
       }
     }
 
@@ -1003,6 +1090,141 @@ export class Stage1Scene implements Scene {
       this.checkEnemyLootDrop(boss.id, 'boss_dog', boss.isAlive, boss.x, boss.y);
     }
 
+    // 8b. Update Banana Peel Traps
+    for (let i = this.bananaTraps.length - 1; i >= 0; i--) {
+      const trap = this.bananaTraps[i];
+      trap.timer -= dt;
+      if (trap.timer <= 0) {
+        this.bananaTraps.splice(i, 1);
+        continue;
+      }
+      const playerRect = this.player.getRect();
+      const trapRect = { x: trap.x - 14, y: trap.y - 12, width: 28, height: 16 };
+      if (CollisionSystem.checkAABB(playerRect, trapRect)) {
+        this.player.applySlip(0.85);
+        if (!this.isParcelDropped) {
+          this.dropParcel(this.player.x, this.player.y + 10, -120, -180);
+        }
+        this.audio.play('player_hurt');
+        this.gameFeel.triggerComicText('TRƯỢT VỎ CHUỐI! 🍌💨', this.player.x, this.player.y - 25, '#fde047');
+        this.camera.startShake(3, 0.2);
+        this.bananaTraps.splice(i, 1);
+      }
+    }
+
+    // 8c. Update Alley Rats (AI + Physics + Hazard Safety)
+    for (const rat of this.rats) {
+      if (!rat.isAlive && rat.state !== 'KO') continue;
+      const prevRatY = rat.y;
+      rat.updateAI(
+        dt,
+        this.player.x,
+        this.player.y,
+        this.droppedParcel,
+        STAGE_1_CONFIG.PLATFORMS,
+        STAGE_1_CONFIG.GROUND_SEGMENTS,
+        STAGE_1_CONFIG.HAZARDS
+      );
+      rat.x += rat.vx * dt * this.enemyStatus.getMovementMultiplier(rat.id);
+      rat.y += rat.vy * dt;
+      CollisionSystem.resolveHorizontal(rat, STAGE_1_CONFIG.WORLD_WIDTH);
+      CollisionSystem.resolveVertical(
+        rat,
+        STAGE_1_CONFIG.PLATFORMS,
+        STAGE_1_CONFIG.GROUND_SEGMENTS,
+        prevRatY
+      );
+      rat.update(dt);
+
+      if (rat.isAlive && rat.state !== 'KO') {
+        const outOfBounds = rat.y > STAGE_1_CONFIG.WORLD_HEIGHT - 60;
+        if (outOfBounds) {
+          rat.x = rat.zoneId === 'B' ? 1060 : 1650;
+          rat.y = 580;
+          rat.vx = 0;
+          rat.vy = 0;
+          rat.state = 'IDLE';
+          rat.isGrounded = true;
+        }
+      }
+      this.checkEnemyLootDrop(rat.id, 'dog', rat.isAlive, rat.x, rat.y);
+    }
+
+    // 8d. Update Saboteur Shippers (AI + Physics + Hazard Safety)
+    for (const sab of this.saboteurs) {
+      if (!sab.isAlive && sab.state !== 'KO') continue;
+      const prevSabY = sab.y;
+      sab.updateAI(
+        dt,
+        this.player.x,
+        this.player.y,
+        this.droppedParcel,
+        STAGE_1_CONFIG.PLATFORMS,
+        STAGE_1_CONFIG.GROUND_SEGMENTS,
+        STAGE_1_CONFIG.HAZARDS
+      );
+      sab.x += sab.vx * dt * this.enemyStatus.getMovementMultiplier(sab.id);
+      sab.y += sab.vy * dt;
+      CollisionSystem.resolveHorizontal(sab, STAGE_1_CONFIG.WORLD_WIDTH);
+      CollisionSystem.resolveVertical(
+        sab,
+        STAGE_1_CONFIG.PLATFORMS,
+        STAGE_1_CONFIG.GROUND_SEGMENTS,
+        prevSabY
+      );
+      sab.update(dt);
+
+      if (sab.isAlive && sab.state !== 'KO') {
+        const outOfBounds = sab.y > STAGE_1_CONFIG.WORLD_HEIGHT - 60;
+        if (outOfBounds) {
+          sab.x = 1840;
+          sab.y = 546;
+          sab.vx = 0;
+          sab.vy = 0;
+          sab.state = 'IDLE';
+          sab.isGrounded = true;
+        }
+      }
+      this.checkEnemyLootDrop(sab.id, 'rival', sab.isAlive, sab.x, sab.y);
+    }
+
+    // 8e. Update Alley Guards (AI + Physics + Hazard Safety)
+    for (const guard of this.guards) {
+      if (!guard.isAlive && guard.state !== 'KO') continue;
+      const prevGuardY = guard.y;
+      guard.updateAI(
+        dt,
+        this.player.x,
+        this.player.y,
+        STAGE_1_CONFIG.PLATFORMS,
+        STAGE_1_CONFIG.GROUND_SEGMENTS,
+        STAGE_1_CONFIG.HAZARDS
+      );
+      guard.x += guard.vx * dt * this.enemyStatus.getMovementMultiplier(guard.id);
+      guard.y += guard.vy * dt;
+      CollisionSystem.resolveHorizontal(guard, STAGE_1_CONFIG.WORLD_WIDTH);
+      CollisionSystem.resolveVertical(
+        guard,
+        STAGE_1_CONFIG.PLATFORMS,
+        STAGE_1_CONFIG.GROUND_SEGMENTS,
+        prevGuardY
+      );
+      guard.update(dt);
+
+      if (guard.isAlive && guard.state !== 'KO') {
+        const outOfBounds = guard.y > STAGE_1_CONFIG.WORLD_HEIGHT - 60;
+        if (outOfBounds) {
+          guard.x = 2440;
+          guard.y = 538;
+          guard.vx = 0;
+          guard.vy = 0;
+          guard.state = 'IDLE';
+          guard.isGrounded = true;
+        }
+      }
+      this.checkEnemyLootDrop(guard.id, 'thug', guard.isAlive, guard.x, guard.y);
+    }
+
     // 9. Update Projectiles
     for (const proj of this.projectiles) {
       if (proj.isExpired) continue;
@@ -1028,6 +1250,9 @@ export class Stage1Scene implements Scene {
       ...this.rivals.filter((r) => r.isAlive),
       ...this.thugs.filter((t) => t.isAlive),
       ...this.bossDogs.filter((b) => b.isAlive),
+      ...this.rats.filter((r) => r.isAlive),
+      ...this.saboteurs.filter((s) => s.isAlive),
+      ...this.guards.filter((g) => g.isAlive),
     ];
 
     const playerHitbox = this.player.getActiveHitbox();
@@ -1043,6 +1268,13 @@ export class Stage1Scene implements Scene {
         const impactY = impacted.reduce((sum, target) => sum + target.getHurtbox().y + target.getHurtbox().height / 2, 0) / impacted.length;
         this.gameFeel.triggerMeleeHit(this.player.comboStep, hits, impactX, impactY);
         this.telemetry.recordMeleeHits(hits.length);
+
+        for (const guard of this.guards) {
+          if (hits.includes(guard.id) && guard.state === 'GUARD_STANCE' && !guard.isShieldBroken) {
+            this.audio.play('hit_medium');
+            this.gameFeel.triggerComicText('CHẮN KHIÊN! 🛡️', guard.x + 20, guard.y - 18, '#38bdf8');
+          }
+        }
       }
     }
 
@@ -1174,6 +1406,36 @@ export class Stage1Scene implements Scene {
       }
     }
 
+    for (const rat of this.rats) {
+      const ratHitbox = rat.getActiveHitbox();
+      if (ratHitbox) {
+        if (!tryPerfectDodge(ratHitbox)) {
+          this.combatSystem.evaluateHitbox(ratHitbox, [playerTarget]);
+        }
+      }
+    }
+
+    for (const sab of this.saboteurs) {
+      const sabHitbox = sab.getActiveHitbox();
+      if (sabHitbox) {
+        if (!tryPerfectDodge(sabHitbox)) {
+          this.combatSystem.evaluateHitbox(sabHitbox, [playerTarget]);
+        }
+      }
+    }
+
+    for (const guard of this.guards) {
+      const guardHitbox = guard.getActiveHitbox();
+      if (guardHitbox) {
+        if (!tryPerfectDodge(guardHitbox)) {
+          const hits = this.combatSystem.evaluateHitbox(guardHitbox, [playerTarget]);
+          if (hits.length > 0 && guard.state === 'MEGAPHONE_BLAST') {
+            this.camera.startShake(4, 0.25);
+          }
+        }
+      }
+    }
+
     const shake = this.gameFeel.consumeShakeRequest ? this.gameFeel.consumeShakeRequest() : null;
     if (shake) this.camera.startShake(shake.intensity, shake.duration);
 
@@ -1242,6 +1504,15 @@ export class Stage1Scene implements Scene {
           if (!foundEnemy || foundEnemy.isAlive || foundEnemy.hp > 0) {
             allMandatoryDefeated = false;
             break;
+          }
+        }
+
+        if (allMandatoryDefeated) {
+          const zoneRatsAlive = this.rats.some((r) => r.zoneId === zoneId && r.isAlive && r.hp > 0);
+          const zoneSaboteursAlive = this.saboteurs.some((s) => s.zoneId === zoneId && s.isAlive && s.hp > 0);
+          const zoneGuardsAlive = this.guards.some((g) => g.zoneId === zoneId && g.isAlive && g.hp > 0);
+          if (zoneRatsAlive || zoneSaboteursAlive || zoneGuardsAlive) {
+            allMandatoryDefeated = false;
           }
         }
 
@@ -1370,6 +1641,10 @@ export class Stage1Scene implements Scene {
       } : null,
       phoneAlert: this.phoneAlert,
       stageTimer: this.stageTimer,
+      rats: this.rats,
+      saboteurs: this.saboteurs,
+      guards: this.guards,
+      bananaTraps: this.bananaTraps,
     };
 
     renderer.renderStage1Scene(

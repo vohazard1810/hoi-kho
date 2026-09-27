@@ -9,6 +9,9 @@ import { Player } from '../entities/Player';
 import { Projectile } from '../entities/Projectile';
 import { Rival } from '../entities/Rival';
 import { Thug } from '../entities/Thug';
+import { AlleyRat } from '../entities/AlleyRat';
+import { SaboteurShipper } from '../entities/SaboteurShipper';
+import { AlleyGuard } from '../entities/AlleyGuard';
 import { HazardData, PlatformData, STAGE_1_CONFIG, ZoneData } from '../config/stage1';
 import { DebugOverlay, PlayerDebugTelemetry } from '../debug/DebugOverlay';
 import { PlaceholderRenderer } from './PlaceholderRenderer';
@@ -47,6 +50,10 @@ export interface StageHazardOverlay {
   waterSplash: { x: number; warning: boolean; active: boolean } | null;
   phoneAlert: { title: string; text: string; timer: number; icon: string } | null;
   stageTimer: number;
+  rats?: AlleyRat[];
+  saboteurs?: SaboteurShipper[];
+  guards?: AlleyGuard[];
+  bananaTraps?: { x: number; y: number }[];
 }
 
 export class Renderer {
@@ -1397,6 +1404,514 @@ export class Renderer {
       ctx.font = '900 12px monospace';
       ctx.fillText(`⚡ ĐÁ: ${hazards.dogClamp.mashRemaining} ⚡`, plScreen.x + shakeX, plScreen.y - 13 + shakeY);
 
+      ctx.restore();
+    }
+
+    // 5. Banana Peel Traps
+    if (hazards.bananaTraps && hazards.bananaTraps.length > 0) {
+      for (const trap of hazards.bananaTraps) {
+        this.renderBananaTrap(camera, trap);
+      }
+    }
+
+    // 6. Alley Rats (Chuột Cống Hẻm Sâu)
+    if (hazards.rats && hazards.rats.length > 0) {
+      for (const rat of hazards.rats) {
+        this.renderEntityAlleyRat(camera, rat);
+      }
+    }
+
+    // 7. Saboteur Shippers (Shipper Gian Thương)
+    if (hazards.saboteurs && hazards.saboteurs.length > 0) {
+      for (const sab of hazards.saboteurs) {
+        this.renderEntitySaboteur(camera, sab);
+      }
+    }
+
+    // 8. Alley Guards (Tổ Trưởng Dân Phòng)
+    if (hazards.guards && hazards.guards.length > 0) {
+      for (const guard of hazards.guards) {
+        this.renderEntityAlleyGuard(camera, guard);
+      }
+    }
+  }
+
+  private renderBananaTrap(camera: Camera, trap: { x: number; y: number }): void {
+    const ctx = this.ctx;
+    const pos = camera.worldToScreen(trap.x, trap.y);
+    ctx.save();
+    // Shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+    ctx.beginPath();
+    ctx.ellipse(pos.x, pos.y + 4, 14, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Peels radiating
+    ctx.translate(pos.x, pos.y);
+    ctx.fillStyle = '#facc15';
+    ctx.strokeStyle = '#ca8a04';
+    ctx.lineWidth = 1.5;
+
+    for (let i = 0; i < 3; i++) {
+      const angle = (i * Math.PI * 2) / 3 - 0.5;
+      ctx.beginPath();
+      ctx.ellipse(Math.cos(angle) * 8, Math.sin(angle) * 5, 8, 4, angle, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    // Green stem center
+    ctx.fillStyle = '#15803d';
+    ctx.beginPath();
+    ctx.arc(0, -1, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tiny warning sparkle
+    const pulse = 0.5 + Math.sin(performance.now() / 150) * 0.4;
+    ctx.fillStyle = `rgba(254, 240, 138, ${pulse})`;
+    ctx.font = '900 10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('🍌', 0, -12);
+
+    ctx.restore();
+  }
+
+  private renderEntityAlleyRat(camera: Camera, rat: AlleyRat): void {
+    const ctx = this.ctx;
+    const pos = camera.worldToScreen(rat.x, rat.y);
+    const isRight = rat.facing === 'right';
+    const isKO = rat.state === 'KO';
+
+    ctx.save();
+    // Contact Shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
+    ctx.beginPath();
+    ctx.ellipse(pos.x + rat.width / 2, pos.y + rat.height - 1, 16, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.translate(pos.x + rat.width / 2, pos.y + rat.height / 2);
+    if (!isRight) ctx.scale(-1, 1);
+    if (isKO) ctx.scale(1, -1);
+
+    // Whip-like pink tail
+    ctx.strokeStyle = '#f472b6';
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-12, 2);
+    const tailWiggle = Math.sin(rat.animTime * 14) * 6;
+    ctx.quadraticCurveTo(-22, tailWiggle - 2, -28, tailWiggle + 4);
+    ctx.stroke();
+
+    // Rat Body (slouching sewer rodent)
+    ctx.fillStyle = rat.state === 'HURT' ? '#ef4444' : '#334155';
+    ctx.beginPath();
+    ctx.ellipse(-2, 1, 13, 8, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Underbelly tint
+    ctx.fillStyle = '#475569';
+    ctx.beginPath();
+    ctx.ellipse(-1, 4, 10, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Head / Snout
+    ctx.fillStyle = rat.state === 'HURT' ? '#f87171' : '#1e293b';
+    ctx.beginPath();
+    ctx.moveTo(6, -4);
+    ctx.lineTo(16, 2);
+    ctx.lineTo(6, 6);
+    ctx.closePath();
+    ctx.fill();
+
+    // Pink nose
+    ctx.fillStyle = '#f472b6';
+    ctx.beginPath();
+    ctx.arc(16, 2, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ear
+    ctx.fillStyle = '#f472b6';
+    ctx.beginPath();
+    ctx.arc(5, -6, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Glowing red beady eye
+    ctx.fillStyle = rat.state === 'TELEGRAPH' ? '#fde047' : isKO ? '#94a3b8' : '#ef4444';
+    ctx.beginPath();
+    ctx.arc(10, -1, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Little scurry claws
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(4, 7, 3, 3);
+    ctx.fillRect(-8, 7, 3, 3);
+
+    ctx.restore();
+
+    // Overhead cues & Health bar (if alive)
+    if (!isKO) {
+      ctx.save();
+      const hpRatio = Math.max(0, rat.hp / rat.maxHp);
+      const barW = 28;
+      const barH = 3;
+      const barX = pos.x + rat.width / 2 - barW / 2;
+      const barY = pos.y - 8;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+      ctx.fillStyle = hpRatio > 0.4 ? '#ef4444' : '#dc2626';
+      ctx.fillRect(barX, barY, barW * hpRatio, barH);
+
+      if (rat.state === 'TELEGRAPH') {
+        const pulse = 0.8 + Math.sin(performance.now() / 90) * 0.2;
+        ctx.fillStyle = `rgba(239, 68, 68, ${pulse})`;
+        ctx.font = 'bold 9px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚠️ TÁP GÓT!', pos.x + rat.width / 2, pos.y - 12);
+      }
+      ctx.restore();
+    }
+  }
+
+  private renderEntitySaboteur(camera: Camera, sab: SaboteurShipper): void {
+    const ctx = this.ctx;
+    const pos = camera.worldToScreen(sab.x, sab.y);
+    const isRight = sab.facing === 'right';
+    const isKO = sab.state === 'KO';
+
+    ctx.save();
+    // Shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.42)';
+    ctx.beginPath();
+    ctx.ellipse(pos.x + sab.width / 2, pos.y + sab.height - 2, 20, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.translate(pos.x + sab.width / 2, pos.y + sab.height / 2);
+    if (!isRight) ctx.scale(-1, 1);
+    if (isKO) {
+      ctx.rotate(Math.PI / 2);
+      ctx.translate(0, -10);
+    }
+
+    // Saboteur Delivery Backpack (bulging dark grey backpack)
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(-22, -18, 12, 26);
+    ctx.strokeStyle = '#06b6d4';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-22, -18, 12, 26);
+
+    // Sticking-out banana peel from backpack
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.ellipse(-18, -22, 4, 7, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Body / Hoodie (Dark Purple rival courier uniform)
+    ctx.fillStyle = sab.state === 'HURT' ? '#ef4444' : '#312e81';
+    ctx.beginPath();
+    ctx.roundRect(-12, -14, 24, 28, 4);
+    ctx.fill();
+
+    // Cyan racing stripes across jacket
+    ctx.strokeStyle = '#22d3ee';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-10, -4);
+    ctx.lineTo(10, -4);
+    ctx.stroke();
+
+    // Head / Cap
+    ctx.fillStyle = '#1e1b4b';
+    ctx.beginPath();
+    ctx.arc(0, -22, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cap visor facing backwards
+    ctx.fillStyle = '#4338ca';
+    ctx.fillRect(-12, -26, 8, 4);
+
+    // Face / Eyes
+    ctx.fillStyle = '#fed7aa';
+    ctx.beginPath();
+    ctx.ellipse(3, -20, 5, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (isKO) {
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.5;
+      // x_x eyes
+      ctx.beginPath();
+      ctx.moveTo(1, -22); ctx.lineTo(5, -18);
+      ctx.moveTo(5, -22); ctx.lineTo(1, -18);
+      ctx.stroke();
+    } else {
+      // Sly squinting eye
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(3, -21, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Legs / Pants & yellow sneakers
+    if (sab.state === 'SWEEP_KICK') {
+      // Extended slide kick pose
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(-14, 8, 14, 10);
+      ctx.fillRect(0, 10, 24, 8);
+      // Sneaker
+      ctx.fillStyle = '#eab308';
+      ctx.fillRect(20, 9, 8, 10);
+    } else {
+      // Normal standing / running stance
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(-8, 14, 7, 14);
+      ctx.fillRect(2, 14, 7, 14);
+      // Yellow sneakers
+      ctx.fillStyle = '#eab308';
+      ctx.fillRect(-9, 25, 9, 5);
+      ctx.fillRect(2, 25, 9, 5);
+    }
+
+    // Arm posing
+    if (sab.state === 'THROW_PEEL') {
+      ctx.fillStyle = '#4338ca';
+      ctx.beginPath();
+      ctx.ellipse(8, -8, 5, 10, -0.6, 0, Math.PI * 2);
+      ctx.fill();
+      // Banana peel in hand
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.ellipse(14, -14, 4, 7, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+
+    // Overhead HUD / Callouts
+    ctx.save();
+    const hpRatio = Math.max(0, sab.hp / sab.maxHp);
+    const barW = 38;
+    const barH = 4;
+    const barX = pos.x + sab.width / 2 - barW / 2;
+    const barY = pos.y - 12;
+
+    if (!isKO) {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+      ctx.fillStyle = hpRatio > 0.4 ? '#818cf8' : '#ef4444';
+      ctx.fillRect(barX, barY, barW * hpRatio, barH);
+
+      ctx.fillStyle = '#e0e7ff';
+      ctx.font = 'bold 9px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('SHIPPER GIAN THƯƠNG', pos.x + sab.width / 2, barY - 4);
+
+      if (sab.state === 'THROW_PEEL') {
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'italic 900 11px system-ui';
+        ctx.fillText('TRƯỢT ĐI BẠN! 🍌', pos.x + sab.width / 2, barY - 16);
+      } else if (sab.state === 'SWEEP_KICK') {
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'italic 900 11px system-ui';
+        ctx.fillText('QUÉT TRỤ! ⚡', pos.x + sab.width / 2, barY - 16);
+      }
+    } else {
+      ctx.font = '14px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('💫 x_x', pos.x + sab.width / 2, pos.y - 6);
+    }
+    ctx.restore();
+  }
+
+  private renderEntityAlleyGuard(camera: Camera, guard: AlleyGuard): void {
+    const ctx = this.ctx;
+    const pos = camera.worldToScreen(guard.x, guard.y);
+    const isRight = guard.facing === 'right';
+    const isKO = guard.state === 'KO';
+
+    ctx.save();
+    // Shadow
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(pos.x + guard.width / 2, pos.y + guard.height - 2, 24, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.translate(pos.x + guard.width / 2, pos.y + guard.height / 2);
+    if (!isRight) ctx.scale(-1, 1);
+    if (isKO) {
+      ctx.rotate(Math.PI / 2);
+      ctx.translate(0, -14);
+    }
+
+    // Civil Defense Patrol Uniform (Khaki brown shirt & dark pants)
+    ctx.fillStyle = guard.state === 'HURT' ? '#ef4444' : '#92400e';
+    ctx.beginPath();
+    ctx.roundRect(-14, -18, 28, 32, 4);
+    ctx.fill();
+
+    // Red Dân Phòng Armband on shoulder
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(-14, -14, 6, 8);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 6px system-ui';
+    ctx.fillText('DP', -13, -8);
+
+    // Dark patrol trousers & black boots
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-10, 14, 8, 18);
+    ctx.fillRect(2, 14, 8, 18);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(-12, 28, 10, 6);
+    ctx.fillRect(2, 28, 10, 6);
+
+    // Head / Patrol Helmet with gold insignia
+    ctx.fillStyle = '#fed7aa';
+    ctx.beginPath();
+    ctx.arc(0, -26, 11, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hardhat / Helmet
+    ctx.fillStyle = '#166534';
+    ctx.beginPath();
+    ctx.arc(0, -29, 13, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(-14, -29, 28, 4);
+    // Gold star badge
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.arc(0, -32, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Face / Expression
+    if (isKO) {
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-2, -26); ctx.lineTo(2, -22);
+      ctx.moveTo(2, -26); ctx.lineTo(-2, -22);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = '#0f172a';
+      // Stern eyes & mustache
+      ctx.fillRect(2, -26, 3, 2);
+      ctx.fillRect(0, -22, 6, 2.5);
+    }
+
+    // FRONT HAND: Riot Shield
+    if (!guard.isShieldBroken) {
+      ctx.save();
+      const isBlocking = guard.state === 'GUARD_STANCE';
+      const shieldPulse = isBlocking ? 0.8 + Math.sin(performance.now() / 100) * 0.2 : 0.65;
+      ctx.fillStyle = `rgba(2, 132, 199, ${shieldPulse})`;
+      ctx.strokeStyle = '#bae6fd';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.roundRect(8, -24, 12, 50, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      // Specular highlight line
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(11, -20);
+      ctx.lineTo(11, 20);
+      ctx.stroke();
+
+      // Steel reinforcement handles
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(6, -10, 4, 22);
+      ctx.restore();
+    } else {
+      // Shattered shield remnants
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(8, -10); ctx.lineTo(14, 5);
+      ctx.moveTo(12, 10); ctx.lineTo(8, 22);
+      ctx.stroke();
+    }
+
+    // BACK HAND: Portable Megaphone or Baton
+    if (guard.state === 'MEGAPHONE_WINDUP' || guard.state === 'MEGAPHONE_BLAST') {
+      // Holding Megaphone up
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.moveTo(6, -22);
+      ctx.lineTo(24, -28);
+      ctx.lineTo(24, -14);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    } else {
+      // Rubber baton in hand
+      ctx.fillStyle = '#1e293b';
+      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.moveTo(-10, -6);
+      ctx.lineTo(-20, 12);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // Megaphone Shockwave Sonic Blast Rings (World coordinates / Screen overlay)
+    if (guard.state === 'MEGAPHONE_BLAST') {
+      ctx.save();
+      const blastX = isRight ? pos.x + guard.width + 10 : pos.x - 10;
+      const blastY = pos.y + 20;
+      const blastDir = isRight ? 1 : -1;
+
+      for (let i = 1; i <= 3; i++) {
+        const radius = i * 40;
+        const ringAlpha = 0.8 - i * 0.22;
+        ctx.strokeStyle = `rgba(245, 158, 11, ${ringAlpha})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(
+          blastX,
+          blastY,
+          radius,
+          isRight ? -0.55 : Math.PI - 0.55,
+          isRight ? 0.55 : Math.PI + 0.55
+        );
+        ctx.stroke();
+      }
+
+      // Comic Blast Banner
+      ctx.fillStyle = '#fef08a';
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 2;
+      ctx.font = 'italic 900 13px system-ui';
+      ctx.textAlign = 'center';
+      const textX = blastX + blastDir * 70;
+      ctx.fillText('ALÔ ALÔ! ĐỨNG LẠI! 📢⚡', textX, blastY - 26);
+      ctx.restore();
+    }
+
+    // Overhead Guard HUD
+    if (!isKO) {
+      ctx.save();
+      const hpRatio = Math.max(0, guard.hp / guard.maxHp);
+      const barW = 46;
+      const barH = 5;
+      const barX = pos.x + guard.width / 2 - barW / 2;
+      const barY = pos.y - 14;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+      ctx.fillStyle = hpRatio > 0.4 ? '#eab308' : '#ef4444';
+      ctx.fillRect(barX, barY, barW * hpRatio, barH);
+
+      // Title & shield tag
+      ctx.fillStyle = '#fef3c7';
+      ctx.font = 'bold 9px system-ui';
+      ctx.textAlign = 'center';
+      const shieldTag = guard.isShieldBroken ? '[VỠ KHIÊN]' : '[🛡️ CHẮN TRƯỚC]';
+      ctx.fillText(`TỔ TRƯỞNG DP ${shieldTag}`, pos.x + guard.width / 2, barY - 4);
       ctx.restore();
     }
   }
