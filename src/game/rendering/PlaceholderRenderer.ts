@@ -13,6 +13,7 @@ import { Thug } from '../entities/Thug';
 import { HazardData, PlatformData, ZoneData } from '../config/stage1';
 import { ObjectiveSystem } from '../systems/ObjectiveSystem';
 import { EconomySystem } from '../systems/EconomySystem';
+import { AssetManager } from '../assets/AssetManager';
 
 export class PlaceholderRenderer {
   public static renderBackground(ctx: CanvasRenderingContext2D, width: number, height: number, theme: 'hub' | 'stage1'): void {
@@ -999,7 +1000,7 @@ export class PlaceholderRenderer {
     // ==========================================
     // 1. ARCADE STREET-BRAWLER STATUS CARD (Top-Left)
     // ==========================================
-    const cardX = 20, cardY = 14, cardW = 390, cardH = 126;
+    const cardX = 20, cardY = 14, cardW = 380, cardH = 118;
 
     // Drop shadow
     ctx.shadowColor = 'rgba(0,0,0,0.75)';
@@ -1045,96 +1046,103 @@ export class PlaceholderRenderer {
 
     // Top Header Banner
     ctx.fillStyle = 'rgba(249, 115, 22, 0.12)';
-    ctx.fillRect(cardX + 6, cardY + 3, cardW - 22, 24);
+    ctx.fillRect(cardX + 6, cardY + 3, cardW - 22, 22);
     ctx.fillStyle = '#ffffff';
     ctx.font = '900 13px system-ui, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('HỘI KHỜ', cardX + 16, cardY + 19);
+    ctx.fillText('HỘI KHỜ', cardX + 14, cardY + 18);
 
     ctx.fillStyle = '#fb923c';
     ctx.font = 'bold 9px monospace';
-    ctx.fillText('SXP • SHIPPER TẬP SỰ', cardX + 90, cardY + 19);
+    ctx.fillText('SXP • SHIPPER TẬP SỰ', cardX + 84, cardY + 18);
 
+    const isHub = objectiveName.includes('Cô Ba') || objectiveName.includes('Hub') || objectiveName.includes('HUẤN LUYỆN') || objectiveName.includes('Bảng Đơn');
     ctx.fillStyle = '#94a3b8';
     ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText('MÀN 1: SÀI GÒN', cardX + cardW - 22, cardY + 19);
+    ctx.fillText(isHub ? 'TRẠM GIAO HÀNG SXP' : 'MÀN 1: SÀI GÒN', cardX + cardW - 14, cardY + 18);
 
-    // Left Column: Shipper Avatar Medallion
-    const avCenterX = cardX + 38;
-    const avCenterY = cardY + 74;
-    const avRadius = 24;
+    // Left Column: Shipper Avatar Portrait
+    const portX = cardX + 10;
+    const portY = cardY + 28;
+    const portW = 54;
+    const portH = 58;
 
-    ctx.save();
-    // Avatar outer glow & border
-    ctx.beginPath();
-    ctx.arc(avCenterX, avCenterY, avRadius + 2, 0, Math.PI * 2);
+    // Portrait Frame background & border
     ctx.fillStyle = '#060d1a';
-    ctx.fill();
+    ctx.fillRect(portX, portY, portW, portH);
     ctx.strokeStyle = '#f97316';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(portX, portY, portW, portH);
 
-    // Inner avatar clip
-    ctx.beginPath();
-    ctx.arc(avCenterX, avCenterY, avRadius, 0, Math.PI * 2);
-    ctx.clip();
+    // Try to render authentic Hội Khờ pixel art sprite portrait
+    let renderedSprite = false;
+    try {
+      const playerSet = AssetManager.getInstance().getCharacterSet('player');
+      const idleState = playerSet?.states.get('idle');
+      if (idleState && idleState.image && idleState.image.complete && idleState.image.naturalWidth > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(portX + 1, portY + 1, portW - 2, portH - 2);
+        ctx.clip();
 
-    // Avatar background
-    const avBg = ctx.createLinearGradient(avCenterX - avRadius, avCenterY - avRadius, avCenterX + avRadius, avCenterY + avRadius);
-    avBg.addColorStop(0, '#1e293b');
-    avBg.addColorStop(1, '#0f172a');
-    ctx.fillStyle = avBg;
-    ctx.fillRect(avCenterX - avRadius, avCenterY - avRadius, avRadius * 2, avRadius * 2);
+        const sw = idleState.frameWidth || 96;
+        const sh = idleState.frameHeight || 96;
+        // Head & chest crop of Hội Khờ's real sprite
+        const cropX = Math.round(sw * 0.22);
+        const cropY = Math.round(sh * 0.12);
+        const cropW = Math.round(sw * 0.56);
+        const cropH = Math.round(sh * 0.56);
 
-    // Shipper Khờ stylized portrait silhouette
-    // Orange Jacket Body
-    ctx.fillStyle = '#ea580c';
-    ctx.beginPath();
-    ctx.ellipse(avCenterX, avCenterY + 20, 19, 12, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Jacket collar
-    ctx.fillStyle = '#0284c7';
-    ctx.fillRect(avCenterX - 5, avCenterY + 10, 10, 8);
-    // Face
-    ctx.fillStyle = '#fcd34d';
-    ctx.beginPath();
-    ctx.arc(avCenterX, avCenterY + 3, 10, 0, Math.PI * 2);
-    ctx.fill();
-    // Delivery Cap
-    ctx.fillStyle = '#ea580c';
-    ctx.beginPath();
-    ctx.arc(avCenterX, avCenterY - 1, 11, Math.PI, 0);
-    ctx.fill();
-    // Cap visor
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(avCenterX - 11, avCenterY - 1, 22, 3);
-    // SXP badge on cap
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 6px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('SXP', avCenterX, avCenterY - 3);
+        ctx.imageSmoothingEnabled = false; // keep pixel art crisp
+        ctx.drawImage(idleState.image, cropX, cropY, cropW, cropH, portX + 2, portY + 2, portW - 4, portH - 4);
+        ctx.restore();
+        renderedSprite = true;
+      }
+    } catch {
+      renderedSprite = false;
+    }
 
-    ctx.restore();
+    // High-tech courier crest fallback (if sprite not yet loaded) - sleek metallic SXP monogram
+    if (!renderedSprite) {
+      ctx.save();
+      const crestGrad = ctx.createLinearGradient(portX, portY, portX + portW, portY + portH);
+      crestGrad.addColorStop(0, '#1e293b');
+      crestGrad.addColorStop(1, '#0f172a');
+      ctx.fillStyle = crestGrad;
+      ctx.fillRect(portX + 1, portY + 1, portW - 2, portH - 2);
 
-    // Avatar Rank Pill
-    ctx.fillStyle = 'rgba(234, 88, 12, 0.9)';
-    ctx.fillRect(avCenterX - 16, avCenterY + 21, 32, 11);
-    ctx.strokeStyle = '#facc15';
+      ctx.fillStyle = '#f97316';
+      ctx.font = '900 13px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('SXP', portX + portW / 2, portY + portH / 2 + 1);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 8px monospace';
+      ctx.fillText('SHIPPER', portX + portW / 2, portY + portH / 2 + 14);
+      ctx.restore();
+    }
+
+    // Rank pill below portrait
+    const pillY = portY + portH + 4;
+    ctx.fillStyle = 'rgba(234, 88, 12, 0.25)';
+    ctx.fillRect(portX, pillY, portW, 14);
+    ctx.strokeStyle = 'rgba(249, 115, 22, 0.6)';
     ctx.lineWidth = 1;
-    ctx.strokeRect(avCenterX - 16, avCenterY + 21, 32, 11);
-    ctx.fillStyle = '#ffffff';
+    ctx.strokeRect(portX, pillY, portW, 14);
+    ctx.fillStyle = '#fbbf24';
     ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('CẤP 1', avCenterX, avCenterY + 29);
+    ctx.fillText('CẤP 1', portX + portW / 2, pillY + 10);
 
-    // Middle Column: Gauges (HP, KIỆN, Q)
-    const barX = cardX + 78;
-    const barW = 224;
+    // Gauges (HP, KIỆN, Q) - Right of portrait
+    const labelX = cardX + 74;
+    const barX = cardX + 114;
+    const barW = cardW - 126;
     const barH = 17;
-    const hpY = cardY + 36;
-    const parcelY = hpY + 26;
-    const momY = parcelY + 26;
+    const hpY = cardY + 30;
+    const parcelY = cardY + 54;
+    const momY = cardY + 78;
 
     // Helper to draw beveled slot
     const drawSlotBackground = (y: number) => {
@@ -1154,7 +1162,7 @@ export class PlaceholderRenderer {
     ctx.textAlign = 'left';
     ctx.fillStyle = '#f87171';
     ctx.font = '900 11px system-ui, sans-serif';
-    ctx.fillText('HP', barX - 16, hpY + 13);
+    ctx.fillText('HP', labelX, hpY + 13);
 
     drawSlotBackground(hpY);
 
@@ -1173,9 +1181,8 @@ export class PlaceholderRenderer {
     ctx.fillStyle = hpGrad;
     ctx.fillRect(barX + 2, hpY + 2, currentHpW, barH - 4);
 
-    // Specular highlight strip
     if (currentHpW > 0) {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
       ctx.fillRect(barX + 2, hpY + 2, currentHpW, 4);
     }
 
@@ -1190,8 +1197,8 @@ export class PlaceholderRenderer {
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#38bdf8';
-    ctx.font = '900 10px system-ui, sans-serif';
-    ctx.fillText('KIỆN', barX - 18, parcelY + 13);
+    ctx.font = '900 11px system-ui, sans-serif';
+    ctx.fillText('KIỆN', labelX, parcelY + 13);
 
     drawSlotBackground(parcelY);
 
@@ -1215,7 +1222,7 @@ export class PlaceholderRenderer {
     ctx.fillRect(barX + 2, parcelY + 2, currentParcelW, barH - 4);
 
     if (currentParcelW > 0) {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
       ctx.fillRect(barX + 2, parcelY + 2, currentParcelW, 4);
     }
 
@@ -1228,7 +1235,7 @@ export class PlaceholderRenderer {
     ctx.textAlign = 'left';
     ctx.fillStyle = '#fbbf24';
     ctx.font = '900 11px system-ui, sans-serif';
-    ctx.fillText('⚡ Q', barX - 18, momY + 13);
+    ctx.fillText('⚡ Q', labelX, momY + 13);
 
     drawSlotBackground(momY);
 
@@ -1266,30 +1273,6 @@ export class PlaceholderRenderer {
       ctx.textAlign = 'right';
       ctx.fillText(`${Math.round(player.momentum)}%`, barX + barW - 6, momY + 13);
     }
-
-    // Right Column: Dedicated Parcel Showcase Box
-    const parcelBoxX = cardX + cardW - 74;
-    const parcelBoxY = cardY + 34;
-    const parcelBoxW = 60;
-    const parcelBoxH = 78;
-
-    ctx.fillStyle = 'rgba(6, 14, 28, 0.9)';
-    ctx.fillRect(parcelBoxX, parcelBoxY, parcelBoxW, parcelBoxH);
-    ctx.strokeStyle = parcelCondition > 70 ? 'rgba(56, 189, 248, 0.5)' : 'rgba(249, 115, 22, 0.5)';
-    ctx.lineWidth = 1.2;
-    ctx.strokeRect(parcelBoxX, parcelBoxY, parcelBoxW, parcelBoxH);
-
-    // Title inside parcel box
-    ctx.fillStyle = parcelCondition > 70 ? '#38bdf8' : '#fb923c';
-    ctx.font = 'bold 8px system-ui';
-    ctx.textAlign = 'center';
-    ctx.fillText('KIỆN SXP', parcelBoxX + parcelBoxW / 2, parcelBoxY + 12);
-
-    // Star rating
-    const stars = parcelCondition >= 90 ? '★★★★★' : parcelCondition >= 70 ? '★★★★☆' : parcelCondition >= 40 ? '★★★☆☆' : '★★☆☆☆';
-    ctx.fillStyle = parcelCondition >= 70 ? '#facc15' : '#fb7185';
-    ctx.font = 'bold 9px system-ui';
-    ctx.fillText(stars, parcelBoxX + parcelBoxW / 2, parcelBoxY + parcelBoxH - 8);
 
     // Bonus Reward pill
     if (bonusReward > 0) {

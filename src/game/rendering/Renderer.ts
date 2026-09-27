@@ -1296,7 +1296,7 @@ export class Renderer {
       objectiveName
     );
     EquipmentVisualRenderer.renderHud(this.ctx, upgradeSnapshot, player);
-    this.v19Visuals.renderParcel(this.ctx, parcelCondition, 342, 60, 48, 32);
+    this.v19Visuals.renderParcel(this.ctx, parcelCondition, 882, 22, 48, 48);
 
     // 8. Debug Overlay (only if DEV_MODE = true)
     if (currentEncounterName !== this.encounterLabel) {
