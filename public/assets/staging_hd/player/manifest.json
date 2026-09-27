@@ -1,0 +1,23 @@
+{
+  "characterId": "player",
+  "formatVersion": 2,
+  "frameWidth": 543,
+  "frameHeight": 724,
+  "anchorX": 271.5,
+  "anchorY": 699,
+  "scale": 1,
+  "states": {
+    "idle":  { "file": "player_idle.png",  "frameCount": 4, "fps": 8,  "loop": true,  "frameWidth": 543, "frameHeight": 724,  "anchorX": 271.5, "anchorY": 699, "scale": 0.1086 },
+    "run":   { "file": "player_run.png",   "frameCount": 6, "fps": 12, "loop": true,  "frameWidth": 362, "frameHeight": 724,  "anchorX": 181,   "anchorY": 699, "scale": 0.1299 },
+    "jump":  { "file": "player_jump.png",  "frameCount": 4, "fps": 10, "loop": false, "frameWidth": 543, "frameHeight": 724,  "anchorX": 271.5, "anchorY": 699, "scale": 0.1140 },
+    "fall":  { "file": "player_fall.png",  "frameCount": 2, "fps": 10, "loop": false, "frameWidth": 887, "frameHeight": 887,  "anchorX": 443.5, "anchorY": 856, "scale": 0.0969 },
+    "land":  { "file": "player_land.png",  "frameCount": 2, "fps": 10, "loop": false, "frameWidth": 768, "frameHeight": 1024, "anchorX": 384, "anchorY": 988, "scale": 0.0802 },
+    "dodge": { "file": "player_dodge.png", "frameCount": 4, "fps": 12, "loop": false, "frameWidth": 543, "frameHeight": 724,  "anchorX": 271.5, "anchorY": 699, "scale": 0.1538 },
+    "j1":    { "file": "player_j1.png",    "frameCount": 4, "fps": 12, "loop": false, "frameWidth": 519, "frameHeight": 756,  "anchorX": 259.5, "anchorY": 730, "scale": 0.1113 },
+    "j2":    { "file": "player_j2.png",    "frameCount": 4, "fps": 12, "loop": false, "frameWidth": 543, "frameHeight": 724,  "anchorX": 271.5, "anchorY": 699, "scale": 0.1105 },
+    "j3":    { "file": "player_j3.png",    "frameCount": 6, "fps": 12, "loop": false, "frameWidth": 362, "frameHeight": 724,  "anchorX": 181,   "anchorY": 699, "scale": 0.1670 },
+    "hurt":  { "file": "player_hurt.png",  "frameCount": 3, "fps": 10, "loop": false, "frameWidth": 724, "frameHeight": 724,  "anchorX": 362,   "anchorY": 699, "scale": 0.1106 },
+    "ko":    { "file": "player_ko.png",    "frameCount": 4, "fps": 8,  "loop": false, "frameWidth": 543, "frameHeight": 724,  "anchorX": 271.5, "anchorY": 699, "scale": 0.1511 },
+    "getup": { "file": "player_getup.png", "frameCount": 4, "fps": 10, "loop": false, "frameWidth": 543, "frameHeight": 724,  "anchorX": 271.5, "anchorY": 699, "scale": 0.1141 }
+  }
+}

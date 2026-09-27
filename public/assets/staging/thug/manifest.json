@@ -1,0 +1,17 @@
+{
+  "characterId": "thug",
+  "formatVersion": 1,
+  "frameWidth": 160,
+  "frameHeight": 144,
+  "anchorX": 80,
+  "anchorY": 130,
+  "scale": 0.78,
+  "states": {
+    "idle": { "file": "thug_idle.png", "frameCount": 4, "fps": 6, "loop": true },
+    "chase": { "file": "thug_chase.png", "frameCount": 6, "fps": 9, "loop": true },
+    "heavy": { "file": "thug_heavy.png", "frameCount": 6, "fps": 10, "loop": false },
+    "charge": { "file": "thug_charge.png", "frameCount": 6, "fps": 12, "loop": false },
+    "hurt": { "file": "thug_hurt.png", "frameCount": 3, "fps": 12, "loop": false },
+    "ko": { "file": "thug_ko.png", "frameCount": 5, "fps": 8, "loop": false }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "characterId": "rival",
+  "formatVersion": 1,
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "anchorX": 64,
+  "anchorY": 114,
+  "scale": 0.75,
+  "states": {
+    "idle": { "file": "rival_idle.png", "frameCount": 4, "fps": 6, "loop": true },
+    "approach": { "file": "rival_approach.png", "frameCount": 6, "fps": 10, "loop": true },
+    "attack": { "file": "rival_attack.png", "frameCount": 6, "fps": 12, "loop": false },
+    "hurt": { "file": "rival_hurt.png", "frameCount": 3, "fps": 12, "loop": false },
+    "ko": { "file": "rival_ko.png", "frameCount": 5, "fps": 8, "loop": false }
+  }
+}

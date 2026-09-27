@@ -1,0 +1,6 @@
+{
+  "name": "Nợ Ơi, Tới Đây!",
+  "description": "2D side-scrolling action game vertical slice.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

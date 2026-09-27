@@ -1,0 +1,17 @@
+{
+  "characterId": "dog",
+  "formatVersion": 1,
+  "frameWidth": 128,
+  "frameHeight": 96,
+  "anchorX": 64,
+  "anchorY": 84,
+  "scale": 0.72,
+  "states": {
+    "idle": { "file": "dog_idle.png", "frameCount": 4, "fps": 6, "loop": true },
+    "approach": { "file": "dog_approach.png", "frameCount": 6, "fps": 10, "loop": true },
+    "telegraph": { "file": "dog_telegraph.png", "frameCount": 3, "fps": 7, "loop": true },
+    "dash": { "file": "dog_dash.png", "frameCount": 4, "fps": 12, "loop": false },
+    "hurt": { "file": "dog_hurt.png", "frameCount": 3, "fps": 12, "loop": false },
+    "ko": { "file": "dog_ko.png", "frameCount": 5, "fps": 8, "loop": false }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "characterId": "boss_dog",
+  "formatVersion": 1,
+  "frameWidth": 192,
+  "frameHeight": 128,
+  "anchorX": 96,
+  "anchorY": 112,
+  "scale": 0.78,
+  "states": {
+    "idle": { "file": "boss_dog_idle.png", "frameCount": 4, "fps": 6, "loop": true },
+    "chase": { "file": "boss_dog_chase.png", "frameCount": 6, "fps": 10, "loop": true },
+    "bite": { "file": "boss_dog_bite.png", "frameCount": 6, "fps": 12, "loop": false },
+    "dash": { "file": "boss_dog_dash.png", "frameCount": 6, "fps": 12, "loop": false },
+    "slam": { "file": "boss_dog_slam.png", "frameCount": 6, "fps": 10, "loop": false },
+    "hurt": { "file": "boss_dog_hurt.png", "frameCount": 3, "fps": 12, "loop": false },
+    "ko": { "file": "boss_dog_ko.png", "frameCount": 5, "fps": 8, "loop": false }
+  }
+}

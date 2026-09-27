@@ -1,0 +1,83 @@
+{
+  "characterId": "player",
+  "formatVersion": 1,
+  "frameWidth": 96,
+  "frameHeight": 96,
+  "anchorX": 48,
+  "anchorY": 78,
+  "scale": 1.0,
+  "states": {
+    "idle": {
+      "file": "player_idle.png",
+      "frameCount": 4,
+      "fps": 10,
+      "loop": true
+    },
+    "run": {
+      "file": "player_run.png",
+      "frameCount": 8,
+      "fps": 12,
+      "loop": true
+    },
+    "jump": {
+      "file": "player_jump.png",
+      "frameCount": 5,
+      "fps": 10,
+      "loop": false
+    },
+    "fall": {
+      "file": "player_fall.png",
+      "frameCount": 2,
+      "fps": 10,
+      "loop": false
+    },
+    "land": {
+      "file": "player_land.png",
+      "frameCount": 2,
+      "fps": 10,
+      "loop": false
+    },
+    "dodge": {
+      "file": "player_dodge.png",
+      "frameCount": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "j1": {
+      "file": "player_j1.png",
+      "frameCount": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "j2": {
+      "file": "player_j2.png",
+      "frameCount": 4,
+      "fps": 12,
+      "loop": false
+    },
+    "j3": {
+      "file": "player_j3.png",
+      "frameCount": 6,
+      "fps": 12,
+      "loop": false
+    },
+    "hurt": {
+      "file": "player_hurt.png",
+      "frameCount": 3,
+      "fps": 10,
+      "loop": false
+    },
+    "ko": {
+      "file": "player_ko.png",
+      "frameCount": 5,
+      "fps": 8,
+      "loop": false
+    },
+    "getup": {
+      "file": "player_getup.png",
+      "frameCount": 5,
+      "fps": 10,
+      "loop": false
+    }
+  }
+}

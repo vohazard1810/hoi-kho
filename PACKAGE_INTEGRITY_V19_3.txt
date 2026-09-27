@@ -1,0 +1,17 @@
+NỢ ƠI, TỚI ĐÂY! — V19.3 PACKAGE INTEGRITY
+
+Canonical artifact: NO_OI_TOI_DAY_V19_3_FINAL_POLISH.zip
+Expected package version: 0.19.3
+Expected automated tests: 168/168 PASS
+
+Archive contract:
+- Includes source, public production assets, scripts, package-lock.json and V19.3 handoff/QA docs.
+- Excludes node_modules/, dist/, nested zip/tar archives and temporary audio-build folders.
+- Must pass clean extraction -> npm ci -> lint -> test -> build.
+
+FINAL CLEAN EXTRACTION STATUS: PASS
+- unzip integrity: PASS
+- npm ci: PASS (91 packages)
+- npm run lint: PASS (0 TypeScript errors)
+- npm run test: PASS (168/168)
+- npm run build: PASS (1729 modules; JS gzip 119.44 kB)
