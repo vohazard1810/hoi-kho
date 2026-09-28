@@ -59,7 +59,7 @@ export class Game {
     try {
       const assetManager = AssetManager.getInstance();
       void AudioManager.getInstance().preload();
-      const [result, dogResult, rivalResult, thugResult, bossResult, backgroundReady, geometryReady, hubReady, stageNpcReady, v19Ready] = await Promise.all([
+      const [result, dogResult, rivalResult, thugResult, bossResult, backgroundReady, geometryReady, hubReady, stageNpcReady, v19Ready, menuReady] = await Promise.all([
         assetManager.loadPreferredCharacterWithFallback('player', '/assets/staging_hd', '/assets/staging'),
         assetManager.loadAndActivateCharacter('dog', '/assets/staging'),
         assetManager.loadAndActivateCharacter('rival', '/assets/staging'),
@@ -70,6 +70,7 @@ export class Game {
         this.renderer.preloadHubAssets(),
         this.renderer.preloadStageNpcAssets(),
         this.renderer.preloadV19Assets(),
+        this.renderer.preloadMenuAssets(),
       ]);
 
       if (result.success && result.status === 'PRODUCTION') {
