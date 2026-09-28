@@ -45,7 +45,7 @@ export interface HubProgressOverlay {
 }
 
 export interface StageHazardOverlay {
-  droppedParcel: { x: number; y: number } | null;
+  droppedParcel: { x: number; y: number; condition?: number } | null;
   motorbike: { active: boolean; warning: boolean; x: number; y: number; facing: 'left' | 'right' } | null;
   dogClamp: { active: boolean; mashRemaining: number } | null;
   waterSplash: { x: number; warning: boolean; active: boolean } | null;
@@ -778,12 +778,40 @@ export class Renderer {
     const combatStep = ['ATTACK', 'PROJECTILE', 'DODGE', 'ULTIMATE'].includes(step.id);
     if (combatStep) {
       ctx.save();
-      ctx.fillStyle = '#854d0e'; ctx.fillRect(target.x - 18, target.y - 66, 36, 62);
-      ctx.strokeStyle = '#facc15'; ctx.lineWidth = 3; ctx.strokeRect(target.x - 18, target.y - 66, 36, 62);
-      ctx.fillStyle = '#fde68a'; ctx.fillRect(target.x - 11, target.y - 54, 22, 18);
-      ctx.fillStyle = '#0f172a'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center'; ctx.fillText('TẬP', target.x, target.y - 41);
-      ctx.fillStyle = 'rgba(2,6,23,0.78)'; ctx.fillRect(target.x - 58, target.y - 92, 116, 20);
-      ctx.fillStyle = '#fef08a'; ctx.fillText('KIỆN HÀNG TẬP', target.x, target.y - 78);
+      // Drop shadow on floor
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.45)';
+      ctx.beginPath();
+      ctx.ellipse(target.x, target.y - 4, 32, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Render genuine high-res delivery parcel backpack
+      const rendered = this.v19Visuals.renderParcel(ctx, 100, target.x - 32, target.y - 64, 64, 48);
+      if (!rendered) {
+        ctx.fillStyle = '#b45309';
+        ctx.fillRect(target.x - 24, target.y - 56, 48, 40);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(target.x - 24, target.y - 56, 48, 40);
+      }
+
+      // Glowing targeting / training ring
+      const pulse = (Math.sin(Date.now() * 0.008) + 1) * 0.5;
+      ctx.strokeStyle = `rgba(249, 115, 22, ${0.55 + pulse * 0.45})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(target.x, target.y - 38, 36 + pulse * 4, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Modern stylish label
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+      ctx.fillRect(target.x - 55, target.y - 88, 110, 22);
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(target.x - 55, target.y - 88, 110, 22);
+      ctx.fillStyle = '#fed7aa';
+      ctx.font = 'bold 11px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('📦 MỤC TIÊU TẬP', target.x, target.y - 73);
       ctx.restore();
     }
 
@@ -1349,35 +1377,35 @@ export class Renderer {
       ctx.ellipse(pScreen.x, pScreen.y + 12, 34, 10, 0, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Cardboard parcel box
-      ctx.fillStyle = '#d97706';
-      ctx.fillRect(pScreen.x - 16, pScreen.y - 14 + bounce, 32, 26);
-      ctx.strokeStyle = '#78350f';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(pScreen.x - 16, pScreen.y - 14 + bounce, 32, 26);
+      // Floor shadow
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.4)';
+      ctx.beginPath();
+      ctx.ellipse(pScreen.x, pScreen.y + 10, 26, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
 
-      // Yellow tape band across parcel
-      ctx.fillStyle = '#fde047';
-      ctx.fillRect(pScreen.x - 16, pScreen.y - 4 + bounce, 32, 6);
-      ctx.fillRect(pScreen.x - 3, pScreen.y - 14 + bounce, 6, 26);
-
-      // SXP stamp
-      ctx.fillStyle = '#1e3a8a';
-      ctx.font = '900 9px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('SXP', pScreen.x, pScreen.y + bounce);
+      // Render actual high-res delivery bag reflecting damage condition
+      const condition = hazards.droppedParcel.condition ?? 100;
+      const rendered = this.v19Visuals.renderParcel(ctx, condition, pScreen.x - 28, pScreen.y - 24 + bounce, 56, 42);
+      if (!rendered) {
+        ctx.fillStyle = '#d97706';
+        ctx.fillRect(pScreen.x - 16, pScreen.y - 14 + bounce, 32, 26);
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(pScreen.x - 16, pScreen.y - 14 + bounce, 32, 26);
+      }
 
       // Callout prompt tag
       const tagPulse = 0.8 + Math.sin(performance.now() / 110) * 0.2;
       ctx.fillStyle = `rgba(220, 38, 38, ${tagPulse})`;
-      ctx.fillRect(pScreen.x - 58, pScreen.y - 40 + bounce, 116, 20);
+      ctx.fillRect(pScreen.x - 62, pScreen.y - 44 + bounce, 124, 22);
       ctx.strokeStyle = '#fef08a';
       ctx.lineWidth = 1.5;
-      ctx.strokeRect(pScreen.x - 58, pScreen.y - 40 + bounce, 116, 20);
+      ctx.strokeRect(pScreen.x - 62, pScreen.y - 44 + bounce, 124, 22);
 
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 11px system-ui';
-      ctx.fillText('📦 [ E ] NHẶT HÀNG!', pScreen.x, pScreen.y - 26 + bounce);
+      ctx.textAlign = 'center';
+      ctx.fillText('📦 [ E ] NHẶT LẠI HÀNG!', pScreen.x, pScreen.y - 29 + bounce);
       ctx.restore();
     }
 
@@ -1454,6 +1482,7 @@ export class Renderer {
   }
 
   private renderEntityAlleyBrat(camera: Camera, brat: AlleyBrat): void {
+    if (this.stageNpc.renderBrat(this.ctx, camera, brat)) return;
     const ctx = this.ctx;
     const pos = camera.worldToScreen(brat.x, brat.y);
     const isRight = brat.facing === 'right';
@@ -1596,6 +1625,7 @@ export class Renderer {
   }
 
   private renderStreetNpc(camera: Camera, npc: NPC): void {
+    if (this.stageNpc.render(this.ctx, camera, npc)) return;
     const ctx = this.ctx;
     const pos = camera.worldToScreen(npc.x, npc.y);
 

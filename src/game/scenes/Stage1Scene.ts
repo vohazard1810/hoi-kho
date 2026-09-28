@@ -1729,7 +1729,7 @@ export class Stage1Scene implements Scene {
     }
 
     const stageHazards: StageHazardOverlay = {
-      droppedParcel: this.isParcelDropped && this.droppedParcel ? { x: this.droppedParcel.x, y: this.droppedParcel.y } : null,
+      droppedParcel: this.isParcelDropped && this.droppedParcel ? { x: this.droppedParcel.x, y: this.droppedParcel.y, condition: objective.parcelCondition } : null,
       motorbike: (this.motorbike.active || this.motorbike.warning) ? {
         active: this.motorbike.active,
         warning: this.motorbike.warning,

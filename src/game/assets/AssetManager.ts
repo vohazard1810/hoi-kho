@@ -266,14 +266,21 @@ export class AssetManager {
   }
 
   /**
-   * Activates the stable set first, then atomically promotes a preferred set.
-   * A malformed/missing HD set can never replace a working production player.
+   * Activates the preferred HD set directly when available, avoiding blurry low-res intermediate render.
+   * If the preferred set fails validation, falls back safely to fallbackBasePath.
    */
   public async loadPreferredCharacterWithFallback(
     characterId: string,
     preferredBasePath: string,
     fallbackBasePath: string
   ): Promise<{ success: boolean; status: CharacterAssetStatus; reasons: string[] }> {
+    // 1. Try preferred HD set first so the player never sees a blurry intermediate texture
+    const preferredResult = await this.loadAndActivateCharacter(characterId, preferredBasePath);
+    if (preferredResult.success && preferredResult.status === 'PRODUCTION') {
+      return preferredResult;
+    }
+
+    // 2. Safe fallback if preferred HD failed
     const fallbackResult = await this.loadAndActivateCharacter(characterId, fallbackBasePath);
     const activeFallback = this.characterSets.get(characterId);
     const fallbackSnapshot = activeFallback ? {
@@ -281,9 +288,6 @@ export class AssetManager {
       states: new Map(activeFallback.states),
       validationErrors: [...activeFallback.validationErrors],
     } : null;
-
-    const preferredResult = await this.loadAndActivateCharacter(characterId, preferredBasePath);
-    if (preferredResult.success && preferredResult.status === 'PRODUCTION') return preferredResult;
 
     if (fallbackResult.success && fallbackSnapshot) {
       this.characterSets.set(characterId, fallbackSnapshot);

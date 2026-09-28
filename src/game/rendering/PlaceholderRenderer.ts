@@ -285,26 +285,54 @@ export class PlaceholderRenderer {
       ctx.globalAlpha = 0.4;
     }
 
-    // Player Body: ORANGE RECTANGLE
-    ctx.fillStyle = player.actionState === 'HURT' ? '#ef4444' : '#f97316';
-    ctx.fillRect(pos.x, pos.y, player.width, player.height);
+    // Floor shadow
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(pos.x + player.width / 2, pos.y + player.height - 2, player.width * 0.45, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-    // Border
-    ctx.strokeStyle = '#c2410c';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(pos.x, pos.y, player.width, player.height);
+    // Player Body: Sleek dark jacket with SXP orange collar and cap (stylized courier silhouette)
+    const isHurt = player.actionState === 'HURT';
+    const bodyColor = isHurt ? '#ef4444' : '#1e293b';
+    const accentColor = isHurt ? '#fca5a5' : '#ea580c';
+
+    // Body torso
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.roundRect(pos.x + 4, pos.y + 16, player.width - 8, player.height - 18, 4);
+    ctx.fill();
+
+    // Orange SXP Courier vest / stripe
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(pos.x + 6, pos.y + 24, player.width - 12, 10);
+
+    // Head / Cap
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(pos.x + player.width / 2, pos.y + 12, 10, 0, Math.PI * 2);
+    ctx.fill();
+    // Cap visor
+    ctx.fillStyle = accentColor;
+    const visorX = player.facing === 'right' ? pos.x + player.width / 2 - 2 : pos.x + player.width / 2 - 12;
+    ctx.fillRect(visorX, pos.y + 6, 14, 5);
 
     // Parcel backpack on back
     ctx.fillStyle = '#b45309';
-    const backpackX = player.facing === 'right' ? pos.x - 6 : pos.x + player.width - 6;
-    ctx.fillRect(backpackX, pos.y + 16, 12, 26);
-    ctx.strokeStyle = '#78350f';
-    ctx.strokeRect(backpackX, pos.y + 16, 12, 26);
+    const backpackX = player.facing === 'right' ? pos.x - 4 : pos.x + player.width - 8;
+    ctx.beginPath();
+    ctx.roundRect(backpackX, pos.y + 16, 12, 26, 3);
+    ctx.fill();
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
 
-    // Facing indicator (eye / visor)
-    ctx.fillStyle = '#ffffff';
-    const eyeX = player.facing === 'right' ? pos.x + player.width - 10 : pos.x + 4;
-    ctx.fillRect(eyeX, pos.y + 12, 6, 6);
+    // Subtle loading shimmer
+    const shimmer = (Math.sin(Date.now() * 0.008) + 1) * 0.5;
+    ctx.strokeStyle = `rgba(249, 115, 22, ${0.3 + shimmer * 0.4})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(pos.x + 3, pos.y + 4, player.width - 6, player.height - 6, 6);
+    ctx.stroke();
 
     // Attack visual feedback
     if (player.actionState === 'ATTACK' && player.attackPhase === 'ACTIVE') {
