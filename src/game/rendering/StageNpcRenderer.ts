@@ -1,6 +1,9 @@
 import { Camera } from '../core/Camera';
 import { NPC } from '../entities/NPC';
 import { AlleyBrat } from '../entities/AlleyBrat';
+import { AlleyGuard } from '../entities/AlleyGuard';
+import { SaboteurShipper } from '../entities/SaboteurShipper';
+import { AlleyRat } from '../entities/AlleyRat';
 
 export class StageNpcRenderer {
   private chutu: HTMLImageElement | null = null;
@@ -8,6 +11,10 @@ export class StageNpcRenderer {
   private chubay: HTMLImageElement | null = null;
   private banam: HTMLImageElement | null = null;
   private brat: HTMLImageElement | null = null;
+  private guard: HTMLImageElement | null = null;
+  private saboteur: HTMLImageElement | null = null;
+  private enforcer: HTMLImageElement | null = null;
+  private rat: HTMLImageElement | null = null;
   private ready = false;
 
   private loadImage(src: string): Promise<HTMLImageElement | null> {
@@ -21,21 +28,29 @@ export class StageNpcRenderer {
 
   public async preload(): Promise<boolean> {
     try {
-      const [chutu, chiba, chubay, banam, brat] = await Promise.all([
+      const [chutu, chiba, chubay, banam, brat, guard, saboteur, enforcer, rat] = await Promise.all([
         this.loadImage('/assets/npc/chutu/chutu_idle.png'),
         this.loadImage('/assets/npc/chiba/chiba_idle.png'),
         this.loadImage('/assets/npc/chubay/chubay_idle.png'),
         this.loadImage('/assets/npc/banam/banam_idle.png'),
         this.loadImage('/assets/npc/brat/brat_idle.png'),
+        this.loadImage('/assets/enemies/guard/guard_idle.png'),
+        this.loadImage('/assets/enemies/saboteur/saboteur_idle.png'),
+        this.loadImage('/assets/enemies/enforcer/enforcer_idle.png'),
+        this.loadImage('/assets/enemies/rat/rat_idle.png'),
       ]);
       this.chutu = chutu;
       this.chiba = chiba;
       this.chubay = chubay;
       this.banam = banam;
       this.brat = brat;
+      this.guard = guard;
+      this.saboteur = saboteur;
+      this.enforcer = enforcer;
+      this.rat = rat;
       this.ready = this.chutu !== null;
     } catch (error) {
-      console.warn('[StageNpc] NPC assets partial failure; fallback active.', error);
+      console.warn('[StageNpc] Street assets partial failure; fallback active.', error);
       this.ready = this.chutu !== null;
     }
     return this.ready;
@@ -65,9 +80,7 @@ export class StageNpcRenderer {
 
       // Shadow
       ctx.fillStyle = 'rgba(2,6,23,0.4)';
-      ctx.beginPath();
-      ctx.ellipse(feet.x, feet.y, 32, 5, 0, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.beginPath(); ctx.ellipse(feet.x, feet.y, 32, 5, 0, 0, Math.PI * 2); ctx.fill();
 
       // Character sprite
       ctx.drawImage(this.chutu, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
@@ -209,7 +222,6 @@ export class StageNpcRenderer {
     ctx.ellipse(feet.x, feet.y - 1, w * 0.32, 5, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // The raw sprite faces right. If facing left, flip horizontally around feet.x
     const flip = brat.facing === 'left';
     ctx.save();
     if (flip) {
@@ -235,7 +247,6 @@ export class StageNpcRenderer {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Laser dot at muzzle
       ctx.fillStyle = '#ef4444';
       ctx.beginPath();
       ctx.arc(muzzleX, muzzleY, 3.5, 0, Math.PI * 2);
@@ -257,6 +268,178 @@ export class StageNpcRenderer {
       ctx.font = 'bold 10px system-ui';
       ctx.textAlign = 'center';
       ctx.fillText('BÉ BO', feet.x, feet.y - h - 8);
+    }
+
+    ctx.restore();
+    return true;
+  }
+
+  public renderGuard(ctx: CanvasRenderingContext2D, camera: Camera, guard: AlleyGuard): boolean {
+    if (!this.guard) return false;
+    const feet = camera.worldToScreen(guard.x + guard.width / 2, guard.y + guard.height);
+    const h = 132;
+    const w = h * (this.guard.naturalWidth / this.guard.naturalHeight);
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Shadow
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.42)';
+    ctx.beginPath();
+    ctx.ellipse(feet.x, feet.y - 1, w * 0.38, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // The guard image faces right with shield in front. If facing left, flip horizontally
+    const flip = guard.facing === 'left';
+    ctx.save();
+    if (flip) {
+      ctx.translate(feet.x, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(this.guard, -Math.round(w / 2), Math.round(feet.y - h), w, h);
+    } else {
+      ctx.drawImage(this.guard, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
+    }
+    ctx.restore();
+
+    // Megaphone Soundwaves AOE
+    if (guard.state === 'MEGAPHONE_BLAST') {
+      const dir = flip ? -1 : 1;
+      const speakerX = feet.x + dir * 18;
+      const speakerY = feet.y - h * 0.65;
+      ctx.save();
+      for (let i = 1; i <= 3; i++) {
+        const radius = i * 40;
+        ctx.strokeStyle = `rgba(239, 68, 68, ${0.9 - i * 0.25})`;
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        const startAngle = dir > 0 ? -Math.PI / 4 : (3 * Math.PI) / 4;
+        const endAngle = dir > 0 ? Math.PI / 4 : (5 * Math.PI) / 4;
+        ctx.arc(speakerX, speakerY, radius, startAngle, endAngle);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Shield status indication
+    if (guard.isShieldBroken) {
+      ctx.fillStyle = '#ef4444';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('💥 VỠ KHIÊN! 💥', feet.x, feet.y - h - 18);
+    } else if (guard.state === 'GUARD_STANCE') {
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('🛡️ THỦ KHIÊN (Né/Đạp W+J)', feet.x, feet.y - h - 18);
+    }
+
+    // Health Bar
+    if (guard.state !== 'KO') {
+      const hpRatio = Math.max(0, guard.hp / guard.maxHp);
+      const barW = 54;
+      const barH = 5;
+      const barX = feet.x - barW / 2;
+      const barY = feet.y - h - 8;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+      ctx.fillStyle = hpRatio > 0.4 ? '#3b82f6' : '#ef4444';
+      ctx.fillRect(barX, barY, barW * hpRatio, barH);
+    }
+
+    ctx.restore();
+    return true;
+  }
+
+  public renderSaboteur(ctx: CanvasRenderingContext2D, camera: Camera, sab: SaboteurShipper): boolean {
+    if (!this.saboteur) return false;
+    const feet = camera.worldToScreen(sab.x + sab.width / 2, sab.y + sab.height);
+    const h = 126;
+    const w = h * (this.saboteur.naturalWidth / this.saboteur.naturalHeight);
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Shadow
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.42)';
+    ctx.beginPath();
+    ctx.ellipse(feet.x, feet.y - 1, w * 0.36, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const flip = sab.facing === 'left';
+    ctx.save();
+    if (flip) {
+      ctx.translate(feet.x, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(this.saboteur, -Math.round(w / 2), Math.round(feet.y - h), w, h);
+    } else {
+      ctx.drawImage(this.saboteur, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
+    }
+    ctx.restore();
+
+    // Health bar & status
+    if (sab.state !== 'KO') {
+      const hpRatio = Math.max(0, sab.hp / sab.maxHp);
+      const barW = 48;
+      const barH = 4;
+      const barX = feet.x - barW / 2;
+      const barY = feet.y - h - 8;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+      ctx.fillStyle = hpRatio > 0.4 ? '#a855f7' : '#ef4444';
+      ctx.fillRect(barX, barY, barW * hpRatio, barH);
+    } else {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(feet.x - 30, feet.y - h - 20, 60, 16);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = 'bold 11px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('😵 BỎ CHẠY', feet.x, feet.y - h - 8);
+    }
+
+    ctx.restore();
+    return true;
+  }
+
+  public renderRat(ctx: CanvasRenderingContext2D, camera: Camera, rat: AlleyRat): boolean {
+    if (!this.rat) return false;
+    const feet = camera.worldToScreen(rat.x + rat.width / 2, rat.y + rat.height);
+    const h = 42;
+    const w = h * (this.rat.naturalWidth / this.rat.naturalHeight);
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Shadow
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.38)';
+    ctx.beginPath();
+    ctx.ellipse(feet.x, feet.y - 1, w * 0.4, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const flip = rat.facing === 'left';
+    ctx.save();
+    if (flip) {
+      ctx.translate(feet.x, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(this.rat, -Math.round(w / 2), Math.round(feet.y - h), w, h);
+    } else {
+      ctx.drawImage(this.rat, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
+    }
+    ctx.restore();
+
+    // Health Bar
+    if (rat.state !== 'KO') {
+      const hpRatio = Math.max(0, rat.hp / rat.maxHp);
+      const barW = 28;
+      const barH = 3;
+      const barX = feet.x - barW / 2;
+      const barY = feet.y - h - 5;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+      ctx.fillStyle = hpRatio > 0.4 ? '#ef4444' : '#dc2626';
+      ctx.fillRect(barX, barY, barW * hpRatio, barH);
     }
 
     ctx.restore();

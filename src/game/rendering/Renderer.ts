@@ -1893,6 +1893,7 @@ export class Renderer {
   }
 
   private renderEntityAlleyRat(camera: Camera, rat: AlleyRat): void {
+    if (this.stageNpc.renderRat(this.ctx, camera, rat)) return;
     const ctx = this.ctx;
     const pos = camera.worldToScreen(rat.x, rat.y);
     const isRight = rat.facing === 'right';
@@ -1991,6 +1992,7 @@ export class Renderer {
   }
 
   private renderEntitySaboteur(camera: Camera, sab: SaboteurShipper): void {
+    if (this.stageNpc.renderSaboteur(this.ctx, camera, sab)) return;
     const ctx = this.ctx;
     const pos = camera.worldToScreen(sab.x, sab.y);
     const isRight = sab.facing === 'right';
@@ -2141,6 +2143,7 @@ export class Renderer {
   }
 
   private renderEntityAlleyGuard(camera: Camera, guard: AlleyGuard): void {
+    if (this.stageNpc.renderGuard(this.ctx, camera, guard)) return;
     const ctx = this.ctx;
     const pos = camera.worldToScreen(guard.x, guard.y);
     const isRight = guard.facing === 'right';
