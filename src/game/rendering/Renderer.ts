@@ -367,7 +367,7 @@ export class Renderer {
     }
 
     // Safe fallback to geometric graybox representation
-    PlaceholderRenderer.renderPlayer(this.ctx, camera, player);
+    PlaceholderRenderer.renderPlayer(this.ctx, camera, player, visualScale);
     this.lastPlayerTelemetry = {
       visualState: player.currentVisualState,
       frameIndex: 0,
@@ -634,8 +634,16 @@ export class Renderer {
     // 3. NPC Cô Ba
     if (!this.hubProduction.renderCoBa(this.ctx, camera, coba)) PlaceholderRenderer.renderNPC(this.ctx, camera, coba);
 
-    // 4. Player (with production sprite / safe fallback)
-    this.renderEntityPlayer(camera, player, upgradeSnapshot, HUB_HUMAN_SCALE);
+    // 4. Player (with production sprite / safe instant fallback)
+    const assetManager = AssetManager.getInstance();
+    const playerSet = assetManager.getCharacterSet('player');
+    if (!playerSet || playerSet.status !== 'PRODUCTION' || !playerSet.isReady) {
+      if (!this.hubProduction.renderPlayerFallback(this.ctx, camera, player)) {
+        this.renderEntityPlayer(camera, player, upgradeSnapshot, HUB_HUMAN_SCALE);
+      }
+    } else {
+      this.renderEntityPlayer(camera, player, upgradeSnapshot, HUB_HUMAN_SCALE);
+    }
 
     if (tutorial.active) {
       this.renderHubTutorial(camera, tutorial);
@@ -1483,7 +1491,7 @@ export class Renderer {
     // 10. Ambient Street NPCs (Chị Ba Nước Mía, Chú Bảy Sửa Xe, Bà Năm Ban Công)
     if (hazards.streetNpcs && hazards.streetNpcs.length > 0) {
       for (const npc of hazards.streetNpcs) {
-        this.renderStreetNpc(camera, npc);
+        this.renderStreetNpc(camera, npc, player.x);
       }
     }
   }
@@ -1631,8 +1639,8 @@ export class Renderer {
     }
   }
 
-  private renderStreetNpc(camera: Camera, npc: NPC): void {
-    if (this.stageNpc.render(this.ctx, camera, npc)) return;
+  private renderStreetNpc(camera: Camera, npc: NPC, playerX?: number): void {
+    if (this.stageNpc.render(this.ctx, camera, npc, playerX)) return;
     const ctx = this.ctx;
     const pos = camera.worldToScreen(npc.x, npc.y);
 
@@ -2480,7 +2488,7 @@ export class Renderer {
     else PlaceholderRenderer.renderPickups(this.ctx, camera, pickups);
 
     // 5. Entities (with safe fallback to placeholder)
-    if (!this.stageNpc.render(this.ctx, camera, customer)) PlaceholderRenderer.renderNPC(this.ctx, camera, customer);
+    if (!this.stageNpc.render(this.ctx, camera, customer, player.x)) PlaceholderRenderer.renderNPC(this.ctx, camera, customer);
 
     for (const d of dogs) {
       this.renderContactShadow(camera, d, STAGE_DOG_SCALE, !d.isAlive);

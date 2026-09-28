@@ -169,48 +169,48 @@ export class AssetManager {
     const loadedImages = new Map<string, HTMLImageElement>();
     const loadErrors: string[] = [];
 
-    for (const stateName of stateKeys) {
-      const state = manifestData.states[stateName];
-      const fileUrl = `${sourcePath}/${state.file}?${versionParam}`;
+    await Promise.all(
+      stateKeys.map(async (stateName) => {
+        const state = manifestData.states[stateName];
+        const fileUrl = `${sourcePath}/${state.file}?${versionParam}`;
 
-      try {
-        // Binary buffer check for PNG signature with cache: 'no-store'
-        const fileRes = await fetch(fileUrl, { cache: 'no-store' });
-        if (!fileRes.ok) {
-          loadErrors.push(`State '${stateName}' file not found (${fileUrl})`);
-          continue;
-        }
-        const arrayBuf = await fileRes.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuf);
-        const sigCheck = AssetValidator.validatePngSignature(bytes);
-        if (!sigCheck.valid) {
-          loadErrors.push(`State '${stateName}' (${state.file}): ${sigCheck.reasons.join(', ')}`);
-          continue;
-        }
-
-        // Image decode check: decode directly from memory buffer/blob without second network fetch
-        let img: HTMLImageElement;
-        if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function' && typeof Blob !== 'undefined') {
-          const blob = new Blob([arrayBuf], { type: 'image/png' });
-          const blobUrl = URL.createObjectURL(blob);
-          try {
-            img = await this.loadImage(blobUrl);
-          } finally {
-            URL.revokeObjectURL(blobUrl);
+        try {
+          const fileRes = await fetch(fileUrl);
+          if (!fileRes.ok) {
+            loadErrors.push(`State '${stateName}' file not found (${fileUrl})`);
+            return;
           }
-        } else {
-          img = await this.loadImage(fileUrl);
-        }
+          const arrayBuf = await fileRes.arrayBuffer();
+          const bytes = new Uint8Array(arrayBuf);
+          const sigCheck = AssetValidator.validatePngSignature(bytes);
+          if (!sigCheck.valid) {
+            loadErrors.push(`State '${stateName}' (${state.file}): ${sigCheck.reasons.join(', ')}`);
+            return;
+          }
 
-        if (img.naturalWidth === 0 || img.naturalHeight === 0) {
-          loadErrors.push(`State '${stateName}' decoded as 0x0 empty image`);
-          continue;
+          let img: HTMLImageElement;
+          if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function' && typeof Blob !== 'undefined') {
+            const blob = new Blob([arrayBuf], { type: 'image/png' });
+            const blobUrl = URL.createObjectURL(blob);
+            try {
+              img = await this.loadImage(blobUrl);
+            } finally {
+              URL.revokeObjectURL(blobUrl);
+            }
+          } else {
+            img = await this.loadImage(fileUrl);
+          }
+
+          if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+            loadErrors.push(`State '${stateName}' decoded as 0x0 empty image`);
+            return;
+          }
+          loadedImages.set(stateName, img);
+        } catch (err: any) {
+          loadErrors.push(`State '${stateName}' decode error: ${err.message || err}`);
         }
-        loadedImages.set(stateName, img);
-      } catch (err: any) {
-        loadErrors.push(`State '${stateName}' decode error: ${err.message || err}`);
-      }
-    }
+      })
+    );
 
     if (loadErrors.length > 0) {
       if (currentSet) {

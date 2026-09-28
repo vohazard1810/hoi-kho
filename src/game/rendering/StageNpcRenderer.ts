@@ -82,7 +82,7 @@ export class StageNpcRenderer {
     ctx.fill();
 
     // 2. Crisp occlusion shadow directly beneath soles/wheels
-    ctx.fillStyle = 'rgba(2, 6, 23, 0.58)';
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.62)';
     ctx.beginPath();
     ctx.ellipse(x, y - 1, radiusX * 0.85, radiusY * 0.75, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -98,15 +98,18 @@ export class StageNpcRenderer {
     if (isHurt) {
       ctx.filter = 'brightness(1.9) saturate(0.65)';
     } else {
-      ctx.filter = 'brightness(1.02) contrast(1.02) saturate(1.05)';
+      // Golden hour sunset grading matching alley dusk: warm saturation, subtle sepia, gentle contrast
+      ctx.filter = 'brightness(0.97) contrast(1.05) saturate(1.18) sepia(0.08)';
     }
   }
 
-  public render(ctx: CanvasRenderingContext2D, camera: Camera, npc: NPC): boolean {
+  public render(ctx: CanvasRenderingContext2D, camera: Camera, npc: NPC, playerX?: number): boolean {
+    const isNear = playerX !== undefined && Math.abs(playerX - (npc.x + npc.width / 2)) < 90;
+
     if (npc.role === 'chutu') {
       if (!this.ready || !this.chutu) return false;
       const feet = camera.worldToScreen(npc.x + npc.width / 2, npc.y + npc.height);
-      const h = 148;
+      const h = 138;
       const w = h * (this.chutu.naturalWidth / this.chutu.naturalHeight);
       ctx.save();
       ctx.imageSmoothingEnabled = true;
@@ -117,63 +120,67 @@ export class StageNpcRenderer {
       ctx.strokeStyle = `rgba(245, 158, 11, ${0.45 + pulse * 0.5})`;
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.ellipse(feet.x, feet.y, 48 + pulse * 8, 12 + pulse * 2, 0, 0, Math.PI * 2);
+      ctx.ellipse(feet.x, feet.y, 44 + pulse * 6, 11 + pulse * 2, 0, 0, Math.PI * 2);
       ctx.stroke();
 
       // Dual-layer grounded shadow
-      this.drawGroundedShadow(ctx, feet.x, feet.y, 36, 6);
+      this.drawGroundedShadow(ctx, feet.x, feet.y, 34, 6);
 
       // Character sprite with sunset grading
       this.applyEnvironmentBlend(ctx, false);
       ctx.drawImage(this.chutu, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
       ctx.filter = 'none';
 
-      // Animated callout bubble
-      const bob = Math.sin(Date.now() * 0.005) * 4;
-      const bubbleY = feet.y - h - 30 + bob;
-      ctx.fillStyle = '#f59e0b';
-      ctx.beginPath();
-      ctx.roundRect(feet.x - 75, bubbleY - 14, 150, 26, 6);
-      ctx.fill();
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 12px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('📦 Shipper ơi, đây nè!', feet.x, bubbleY + 4);
+      // Context-sensitive callout: ONLY show text bubble when player is within range!
+      if (isNear || (playerX !== undefined && Math.abs(playerX - (npc.x + npc.width / 2)) < 130)) {
+        const bob = Math.sin(Date.now() * 0.005) * 3;
+        const bubbleY = feet.y - h - 24 + bob;
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.roundRect(feet.x - 70, bubbleY - 12, 140, 24, 6);
+        ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 11px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('📦 [ E ] Giao kiện hàng', feet.x, bubbleY + 4);
+      }
 
       ctx.restore();
       return true;
     }
 
     if (npc.role === 'chiba' && this.chiba) {
-      const feet = camera.worldToScreen(npc.x + npc.width / 2 + 10, npc.y + npc.height);
-      const h = 138;
+      const feet = camera.worldToScreen(npc.x + npc.width / 2 + 8, npc.y + npc.height);
+      const h = 126;
       const w = h * (this.chiba.naturalWidth / this.chiba.naturalHeight);
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
-      // Floor Shadow
-      this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.44, 7);
+      // Floor Shadow under feet and cart wheels
+      this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.44, 6);
 
       // Sprite with sunset blend
       this.applyEnvironmentBlend(ctx, false);
       ctx.drawImage(this.chiba, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
       ctx.filter = 'none';
 
-      // Floating friendly callout bubble
-      const bob = Math.sin(Date.now() * 0.004) * 3;
-      const bubbleY = feet.y - h - 22 + bob;
-      ctx.fillStyle = 'rgba(14, 165, 233, 0.92)';
-      ctx.beginPath();
-      ctx.roundRect(feet.x - 70, bubbleY - 13, 140, 26, 6);
-      ctx.fill();
-      ctx.strokeStyle = '#bae6fd';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 11px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('🥤 TRÀ ĐÁ ĐÂY EM! [ E ]', feet.x, bubbleY + 4);
+      // Context-sensitive callout: ONLY show bubble when player is nearby (< 90px)
+      if (isNear) {
+        const bob = Math.sin(Date.now() * 0.004) * 3;
+        const bubbleY = feet.y - h - 20 + bob;
+        ctx.fillStyle = 'rgba(14, 165, 233, 0.92)';
+        ctx.beginPath();
+        ctx.roundRect(feet.x - 65, bubbleY - 12, 130, 24, 6);
+        ctx.fill();
+        ctx.strokeStyle = '#bae6fd';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🥤 [ E ] Uống trà đá', feet.x, bubbleY + 4);
+      }
 
       ctx.restore();
       return true;
@@ -181,34 +188,37 @@ export class StageNpcRenderer {
 
     if (npc.role === 'chubay' && this.chubay) {
       const feet = camera.worldToScreen(npc.x + npc.width / 2, npc.y + npc.height);
-      const h = 118;
+      // Realistic sitting height on low plastic stool (88px vs standing player ~135px)
+      const h = 88;
       const w = h * (this.chubay.naturalWidth / this.chubay.naturalHeight);
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
-      // Floor Shadow
-      this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.42, 6);
+      // Floor Shadow under stool legs and tire
+      this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.42, 5);
 
       // Sprite with sunset blend
       this.applyEnvironmentBlend(ctx, false);
       ctx.drawImage(this.chubay, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
       ctx.filter = 'none';
 
-      // Floating callout bubble
-      const bob = Math.sin(Date.now() * 0.004 + 1) * 3;
-      const bubbleY = feet.y - h - 22 + bob;
-      ctx.fillStyle = 'rgba(234, 88, 12, 0.92)';
-      ctx.beginPath();
-      ctx.roundRect(feet.x - 75, bubbleY - 13, 150, 26, 6);
-      ctx.fill();
-      ctx.strokeStyle = '#fed7aa';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 11px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('🔧 VÁ XE - BĂNG KEO [ E ]', feet.x, bubbleY + 4);
+      // Context-sensitive callout: ONLY show bubble when player is nearby (< 90px)
+      if (isNear) {
+        const bob = Math.sin(Date.now() * 0.004 + 1) * 3;
+        const bubbleY = feet.y - h - 20 + bob;
+        ctx.fillStyle = 'rgba(234, 88, 12, 0.92)';
+        ctx.beginPath();
+        ctx.roundRect(feet.x - 70, bubbleY - 12, 140, 24, 6);
+        ctx.fill();
+        ctx.strokeStyle = '#fed7aa';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🔧 [ E ] Bơm xe & Băng keo', feet.x, bubbleY + 4);
+      }
 
       ctx.restore();
       return true;
@@ -216,7 +226,8 @@ export class StageNpcRenderer {
 
     if (npc.role === 'banam' && this.banam) {
       const feet = camera.worldToScreen(npc.x + npc.width / 2, npc.y + npc.height);
-      const h = 138;
+      // Proportionate grandmother behind balcony railing
+      const h = 96;
       const w = h * (this.banam.naturalWidth / this.banam.naturalHeight);
       ctx.save();
       ctx.imageSmoothingEnabled = true;
@@ -227,20 +238,22 @@ export class StageNpcRenderer {
       ctx.drawImage(this.banam, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
       ctx.filter = 'none';
 
-      // Ambient talk bubble
-      const bob = Math.sin(Date.now() * 0.0035 + 2) * 3;
-      const bubbleY = feet.y - h - 20 + bob;
-      ctx.fillStyle = 'rgba(147, 51, 234, 0.88)';
-      ctx.beginPath();
-      ctx.roundRect(feet.x - 65, bubbleY - 12, 130, 24, 6);
-      ctx.fill();
-      ctx.strokeStyle = '#f3e8ff';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 11px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('👵 BÀ NĂM BAN CÔNG [ E ]', feet.x, bubbleY + 4);
+      // Context-sensitive talk bubble: ONLY show when player is nearby
+      if (isNear) {
+        const bob = Math.sin(Date.now() * 0.0035 + 2) * 3;
+        const bubbleY = feet.y - h - 18 + bob;
+        ctx.fillStyle = 'rgba(147, 51, 234, 0.88)';
+        ctx.beginPath();
+        ctx.roundRect(feet.x - 65, bubbleY - 11, 130, 22, 6);
+        ctx.fill();
+        ctx.strokeStyle = '#f3e8ff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('👵 [ E ] Nghe Bà Năm dặn', feet.x, bubbleY + 4);
+      }
 
       ctx.restore();
       return true;
@@ -252,7 +265,8 @@ export class StageNpcRenderer {
   public renderBrat(ctx: CanvasRenderingContext2D, camera: Camera, brat: AlleyBrat): boolean {
     if (!this.brat) return false;
     const feet = camera.worldToScreen(brat.x + brat.width / 2, brat.y + brat.height);
-    const h = 88;
+    // Proportionate 9-year-old child standing on awning (62px vs adult player 135px)
+    const h = 62;
     const w = h * (this.brat.naturalWidth / this.brat.naturalHeight);
 
     ctx.save();
@@ -260,7 +274,7 @@ export class StageNpcRenderer {
     ctx.imageSmoothingQuality = 'high';
 
     // Dual-layer shadow
-    this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.32, 5);
+    this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.32, 4);
 
     const flip = brat.facing === 'left';
     ctx.save();
@@ -276,39 +290,32 @@ export class StageNpcRenderer {
 
     // Aiming laser beam when in AIM state
     if (brat.state === 'AIM') {
-      const muzzleX = feet.x + (flip ? -28 : 28);
+      const muzzleX = feet.x + (flip ? -20 : 20);
       const muzzleY = feet.y - h * 0.52;
       const targetDirX = flip ? -1 : 1;
       ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
       ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
+      ctx.setLineDash([4, 4]);
       ctx.beginPath();
       ctx.moveTo(muzzleX, muzzleY);
-      ctx.lineTo(muzzleX + targetDirX * 220, muzzleY + 90);
+      ctx.lineTo(muzzleX + targetDirX * 200, muzzleY + 80);
       ctx.stroke();
       ctx.setLineDash([]);
 
       ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      ctx.arc(muzzleX, muzzleY, 3.5, 0, Math.PI * 2);
+      ctx.arc(muzzleX, muzzleY, 3, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Name tag & KO status
+    // Comic KO status (no permanent distracting yellow billboard)
     if (brat.state === 'KO') {
       ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-      ctx.fillRect(feet.x - 30, feet.y - h - 22, 60, 18);
+      ctx.fillRect(feet.x - 24, feet.y - h - 18, 48, 16);
       ctx.fillStyle = '#cbd5e1';
-      ctx.font = 'bold 11px system-ui';
-      ctx.textAlign = 'center';
-      ctx.fillText('😭 x_x', feet.x, feet.y - h - 9);
-    } else {
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
-      ctx.fillRect(feet.x - 26, feet.y - h - 20, 52, 16);
-      ctx.fillStyle = '#fde047';
       ctx.font = 'bold 10px system-ui';
       ctx.textAlign = 'center';
-      ctx.fillText('BÉ BO', feet.x, feet.y - h - 8);
+      ctx.fillText('😭 x_x', feet.x, feet.y - h - 6);
     }
 
     ctx.restore();
@@ -318,7 +325,7 @@ export class StageNpcRenderer {
   public renderGuard(ctx: CanvasRenderingContext2D, camera: Camera, guard: AlleyGuard): boolean {
     if (!this.guard) return false;
     const feet = camera.worldToScreen(guard.x + guard.width / 2, guard.y + guard.height);
-    const h = 132;
+    const h = 130;
     const w = h * (this.guard.naturalWidth / this.guard.naturalHeight);
 
     ctx.save();
@@ -349,9 +356,9 @@ export class StageNpcRenderer {
       const speakerY = feet.y - h * 0.65;
       ctx.save();
       for (let i = 1; i <= 3; i++) {
-        const radius = i * 40;
+        const radius = i * 38;
         ctx.strokeStyle = `rgba(239, 68, 68, ${0.9 - i * 0.25})`;
-        ctx.lineWidth = 3.5;
+        ctx.lineWidth = 3;
         ctx.beginPath();
         const startAngle = dir > 0 ? -Math.PI / 4 : (3 * Math.PI) / 4;
         const endAngle = dir > 0 ? Math.PI / 4 : (5 * Math.PI) / 4;
@@ -394,7 +401,7 @@ export class StageNpcRenderer {
   public renderSaboteur(ctx: CanvasRenderingContext2D, camera: Camera, sab: SaboteurShipper): boolean {
     if (!this.saboteur) return false;
     const feet = camera.worldToScreen(sab.x + sab.width / 2, sab.y + sab.height);
-    const h = 126;
+    const h = 124;
     const w = h * (this.saboteur.naturalWidth / this.saboteur.naturalHeight);
 
     ctx.save();
@@ -450,7 +457,7 @@ export class StageNpcRenderer {
   public renderRat(ctx: CanvasRenderingContext2D, camera: Camera, rat: AlleyRat): boolean {
     if (!this.rat) return false;
     const feet = camera.worldToScreen(rat.x + rat.width / 2, rat.y + rat.height);
-    const h = 42;
+    const h = 32;
     const w = h * (this.rat.naturalWidth / this.rat.naturalHeight);
 
     ctx.save();
@@ -497,7 +504,7 @@ export class StageNpcRenderer {
   public renderEnforcer(ctx: CanvasRenderingContext2D, camera: Camera, thug: Thug): boolean {
     if (!this.enforcer) return false;
     const feet = camera.worldToScreen(thug.x + thug.width / 2, thug.y + thug.height);
-    const h = 152;
+    const h = 142;
     const w = h * (this.enforcer.naturalWidth / this.enforcer.naturalHeight);
 
     ctx.save();
@@ -575,7 +582,7 @@ export class StageNpcRenderer {
   public renderRivalShipper(ctx: CanvasRenderingContext2D, camera: Camera, rival: Rival): boolean {
     if (!this.saboteur) return false;
     const feet = camera.worldToScreen(rival.x + rival.width / 2, rival.y + rival.height);
-    const h = 130;
+    const h = 124;
     const w = h * (this.saboteur.naturalWidth / this.saboteur.naturalHeight);
 
     ctx.save();

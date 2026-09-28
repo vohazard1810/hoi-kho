@@ -273,10 +273,21 @@ export class PlaceholderRenderer {
     ctx.restore();
   }
 
-  public static renderPlayer(ctx: CanvasRenderingContext2D, camera: Camera, player: Player): void {
-    const pos = camera.worldToScreen(player.x, player.y);
+  public static renderPlayer(ctx: CanvasRenderingContext2D, camera: Camera, player: Player, visualScale: number = 1): void {
+    const feet = camera.worldToScreen(player.x + player.width / 2, player.y + player.height);
 
     ctx.save();
+
+    if (visualScale !== 1) {
+      ctx.translate(feet.x, feet.y);
+      ctx.scale(visualScale, visualScale);
+      ctx.translate(-feet.x, -feet.y);
+    }
+
+    const pos = {
+      x: feet.x - player.width / 2,
+      y: feet.y - player.height,
+    };
 
     // Invulnerability flashing or dodge transparency
     if (player.actionState === 'DODGE') {
