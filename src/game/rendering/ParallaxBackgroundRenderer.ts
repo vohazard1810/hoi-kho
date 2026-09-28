@@ -87,17 +87,71 @@ export class ParallaxBackgroundRenderer {
   }
   private renderStreetSigns(ctx: CanvasRenderingContext2D, tileX: number, tileY: number): void {
     const signs = [
-      { x: 848, y: 317, w: 230, h: 48, text: 'CƠM TẤM CÔ NĂM', color: '#f59e0b' },
-      { x: 1512, y: 320, w: 230, h: 48, text: 'SỬA XE TƯ LÙN', color: '#38bdf8' },
+      { x: 848, y: 317, w: 230, h: 48, text: 'CƠM TẤM CÔ NĂM', color: '#f59e0b', sub: 'ĐÊM KHUYA • CHUẨN VỊ SÀI GÒN' },
+      { x: 1512, y: 320, w: 230, h: 48, text: 'SỬA XE TƯ LÙN', color: '#38bdf8', sub: 'VÁ VỎ • THAY NHỚT 24/7' },
     ];
     ctx.save();
     for (const sign of signs) {
       const x = tileX + sign.x;
+      const y = tileY + sign.y;
       if (x + sign.w < 0 || x > 1280) continue;
-      ctx.fillStyle = 'rgba(10,18,30,0.9)'; ctx.fillRect(x, tileY + sign.y, sign.w, sign.h);
-      ctx.strokeStyle = sign.color; ctx.lineWidth = 2; ctx.strokeRect(x + 2, tileY + sign.y + 2, sign.w - 4, sign.h - 4);
-      ctx.fillStyle = '#fff7ed'; ctx.font = '900 18px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(sign.text, x + sign.w / 2, tileY + sign.y + sign.h / 2, sign.w - 16);
+
+      // 1. Hanging wrought iron chains from shophouse eaves
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x + 24, y - 10); ctx.lineTo(x + 24, y);
+      ctx.moveTo(x + sign.w - 24, y - 10); ctx.lineTo(x + sign.w - 24, y);
+      ctx.stroke();
+
+      // 2. Weathered vintage wooden / enamel signboard plate
+      const bgGrad = ctx.createLinearGradient(x, y, x, y + sign.h);
+      if (sign.color === '#f59e0b') {
+        bgGrad.addColorStop(0, '#2d1808');
+        bgGrad.addColorStop(0.5, '#1e0e04');
+        bgGrad.addColorStop(1, '#120701');
+      } else {
+        bgGrad.addColorStop(0, '#0c2338');
+        bgGrad.addColorStop(0.5, '#071624');
+        bgGrad.addColorStop(1, '#030a12');
+      }
+      ctx.fillStyle = bgGrad;
+      ctx.beginPath();
+      ctx.roundRect(x, y, sign.w, sign.h, 4);
+      ctx.fill();
+
+      // 3. Aged metallic border with corner rivets
+      ctx.strokeStyle = sign.color;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.fillRect(x + 2, y + 2, sign.w - 4, 1);
+
+      // Corner rivets
+      ctx.fillStyle = sign.color;
+      const r = 1.8;
+      ctx.beginPath();
+      ctx.arc(x + 6, y + 6, r, 0, Math.PI * 2);
+      ctx.arc(x + sign.w - 6, y + 6, r, 0, Math.PI * 2);
+      ctx.arc(x + 6, y + sign.h - 6, r, 0, Math.PI * 2);
+      ctx.arc(x + sign.w - 6, y + sign.h - 6, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 4. Authentic Hand-painted Signboard Lettering
+      ctx.shadowColor = sign.color;
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = '#fffbeb';
+      ctx.font = '900 16px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(sign.text, x + sign.w / 2, y + 26, sign.w - 24);
+      ctx.shadowBlur = 0;
+
+      // Subtitle tagline
+      ctx.fillStyle = sign.color;
+      ctx.font = 'bold 9px monospace';
+      ctx.fillText(sign.sub, x + sign.w / 2, y + 40, sign.w - 24);
     }
     ctx.restore();
   }

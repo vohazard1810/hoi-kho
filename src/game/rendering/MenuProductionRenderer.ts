@@ -139,27 +139,27 @@ export class MenuProductionRenderer {
       }
     }
 
-    // Left-side dark scrim vignette: ensures menu text is 100% crisp & readable
-    const scrim = ctx.createLinearGradient(0, 0, 680, 0);
-    scrim.addColorStop(0, 'rgba(5, 9, 20, 0.95)');
-    scrim.addColorStop(0.45, 'rgba(7, 12, 26, 0.85)');
-    scrim.addColorStop(0.75, 'rgba(11, 18, 38, 0.5)');
+    // Cinematic ambient vignette: keeps menu text crystal-clear while letting the full key art shine through
+    const scrim = ctx.createRadialGradient(260, 360, 40, 260, 360, 520);
+    scrim.addColorStop(0, 'rgba(5, 9, 20, 0.84)');
+    scrim.addColorStop(0.55, 'rgba(7, 12, 26, 0.68)');
+    scrim.addColorStop(0.85, 'rgba(11, 18, 38, 0.35)');
     scrim.addColorStop(1, 'rgba(11, 18, 38, 0)');
     ctx.fillStyle = scrim;
-    ctx.fillRect(0, 0, 680, height);
+    ctx.fillRect(0, 0, 720, height);
 
-    // Top & bottom subtle letterbox shadows
-    const topVignette = ctx.createLinearGradient(0, 0, 0, 140);
-    topVignette.addColorStop(0, 'rgba(3, 7, 18, 0.7)');
+    // Subtle edge letterbox shadows
+    const topVignette = ctx.createLinearGradient(0, 0, 0, 110);
+    topVignette.addColorStop(0, 'rgba(3, 7, 18, 0.65)');
     topVignette.addColorStop(1, 'rgba(3, 7, 18, 0)');
     ctx.fillStyle = topVignette;
-    ctx.fillRect(0, 0, width, 140);
+    ctx.fillRect(0, 0, width, 110);
 
-    const bottomVignette = ctx.createLinearGradient(0, height - 120, 0, height);
+    const bottomVignette = ctx.createLinearGradient(0, height - 100, 0, height);
     bottomVignette.addColorStop(0, 'rgba(3, 7, 18, 0)');
-    bottomVignette.addColorStop(1, 'rgba(2, 6, 23, 0.85)');
+    bottomVignette.addColorStop(1, 'rgba(2, 6, 23, 0.82)');
     ctx.fillStyle = bottomVignette;
-    ctx.fillRect(0, height - 120, width, 120);
+    ctx.fillRect(0, height - 100, width, 100);
   }
 
   /**
@@ -196,6 +196,19 @@ export class MenuProductionRenderer {
     ctx.fillStyle = headlightCone;
     ctx.fillRect(600, 360, 680, 360);
 
+    // Warm golden embers rising from exhaust
+    for (let i = 0; i < 14; i++) {
+      const emberX = 720 + ((i * 37 + time * 45) % 180);
+      const emberY = 620 - ((i * 43 + time * 70) % 220);
+      const emberAlpha = 0.2 + 0.5 * Math.sin(time * 4 + i);
+      if (emberAlpha > 0) {
+        ctx.fillStyle = `rgba(251, 146, 60, ${emberAlpha})`;
+        ctx.beginPath();
+        ctx.arc(emberX, emberY, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
     ctx.restore();
   }
 
@@ -206,15 +219,15 @@ export class MenuProductionRenderer {
     ctx.save();
 
     // 1. Canva Pill Badge: Department & Night Shift
-    const badgeX = 84;
-    const badgeY = 62;
-    const badgeW = 390;
-    const badgeH = 32;
+    const badgeX = 70;
+    const badgeY = 50;
+    const badgeW = 420;
+    const badgeH = 30;
 
     ctx.save();
     ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
     ctx.beginPath();
-    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 16);
+    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 15);
     ctx.fill();
     ctx.strokeStyle = 'rgba(249, 115, 22, 0.6)';
     ctx.lineWidth = 1.5;
@@ -224,44 +237,43 @@ export class MenuProductionRenderer {
     const livePulse = Math.sin(time * 4) > 0;
     ctx.fillStyle = livePulse ? '#22c55e' : '#15803d';
     ctx.beginPath();
-    ctx.arc(badgeX + 18, badgeY + 16, 5, 0, Math.PI * 2);
+    ctx.arc(badgeX + 16, badgeY + 15, 4.5, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = '#f8fafc';
     ctx.font = 'bold 11px system-ui, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('SXP COURIER • SÀI GÒN 2026', badgeX + 32, badgeY + 20);
+    ctx.fillText('SXP COURIER • SÀI GÒN 2026', badgeX + 28, badgeY + 19);
 
     ctx.fillStyle = '#fb923c';
-    ctx.font = 'bold 11px monospace';
+    ctx.font = 'bold 10px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText('CA ĐÊM HẺM 89', badgeX + badgeW - 16, badgeY + 20);
+    ctx.fillText('CA ĐÊM HẺM 89', badgeX + badgeW - 14, badgeY + 19);
     ctx.restore();
 
     // 2. Electric Neon Title: "NỢ ƠI, TỚI ĐÂY!"
-    // Neon tube flicker effect
     const isFlickering = (Math.sin(time * 7.3) > 0.96 && Math.sin(time * 19) > 0.5);
     const neonIntensity = isFlickering ? 0.45 : 1.0;
 
-    const titleX = 84;
-    const titleY = 145;
+    const titleX = 70;
+    const titleY = 130;
 
     // Glowing wire mount behind neon letters
     ctx.strokeStyle = 'rgba(71, 85, 105, 0.45)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(titleX - 10, titleY - 18);
-    ctx.lineTo(titleX + 440, titleY - 18);
+    ctx.moveTo(titleX - 10, titleY - 20);
+    ctx.lineTo(titleX + 460, titleY - 20);
     ctx.stroke();
 
     // Multi-pass neon glow
     ctx.textAlign = 'left';
-    ctx.font = '900 58px system-ui, -apple-system, sans-serif';
+    ctx.font = '900 56px system-ui, -apple-system, sans-serif';
 
     // Pass 1: Outer wide bloom
     ctx.save();
     ctx.shadowColor = `rgba(249, 115, 22, ${0.85 * neonIntensity})`;
-    ctx.shadowBlur = 32;
+    ctx.shadowBlur = 30;
     ctx.fillStyle = '#ea580c';
     ctx.fillText('NỢ ƠI, TỚI ĐÂY!', titleX, titleY);
     ctx.restore();
@@ -278,73 +290,45 @@ export class MenuProductionRenderer {
     ctx.fillStyle = isFlickering ? '#fdba74' : '#fff7ed';
     ctx.fillText('NỢ ƠI, TỚI ĐÂY!', titleX, titleY);
 
-    // 3. Subtitle Banner: Canva comic tag
-    const subY = titleY + 36;
+    // 3. Subtitle Tagline & Red Debt Stamp (integrated seamlessly)
+    const subY = titleY + 32;
     ctx.fillStyle = '#fbbf24';
-    ctx.font = 'bold 15px system-ui, sans-serif';
-    ctx.letterSpacing = '1px';
+    ctx.font = 'bold 14px system-ui, sans-serif';
     ctx.fillText('★ HÀNH TRÌNH CỦA HỘI KHỜ — ĐỜI SHIPPER TRẢ NỢ ★', titleX + 2, subY);
-    ctx.letterSpacing = '0px';
+
+    // Integrated F89 Debt Stamp
+    const stampX = titleX + 2;
+    const stampY = subY + 12;
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.18)';
+    ctx.beginPath();
+    ctx.roundRect(stampX, stampY, 390, 24, 4);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = '#fca5a5';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('🔴 HỢP ĐỒNG F89: 20.000.000 VNĐ • LÃI 15%/NGÀY', stampX + 8, stampY + 16);
 
     ctx.restore();
   }
 
   /**
-   * Renders the F89 Debt Status Ticket (Canva card)
+   * Renders the F89 Debt Status Ticket (retained for backward compatibility)
    */
-  private renderDebtTicker(ctx: CanvasRenderingContext2D): void {
-    const cardX = 84;
-    const cardY = 202;
-    const cardW = 440;
-    const cardH = 58;
-
-    ctx.save();
-    // Glassmorphism card
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    ctx.beginPath();
-    ctx.roundRect(cardX, cardY, cardW, cardH, 10);
-    ctx.fill();
-
-    ctx.strokeStyle = 'rgba(239, 68, 68, 0.45)';
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-
-    // Red warning accent bar on left edge
-    ctx.fillStyle = '#ef4444';
-    ctx.beginPath();
-    ctx.roundRect(cardX, cardY, 6, cardH, [10, 0, 0, 10]);
-    ctx.fill();
-
-    // Debt ledger labels
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#fca5a5';
-    ctx.font = 'bold 11px system-ui, sans-serif';
-    ctx.fillText('HỢP ĐỒNG NỢ F89 • KHOẢN VAY BAN ĐẦU:', cardX + 18, cardY + 20);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '900 16px monospace';
-    ctx.fillText('20.000.000 VNĐ', cardX + 18, cardY + 44);
-
-    // Right side: Interest tag
-    ctx.textAlign = 'right';
-    ctx.fillStyle = '#fb923c';
-    ctx.font = 'bold 11px monospace';
-    ctx.fillText('LÃI SUẤT: 15%/NGÀY', cardX + cardW - 14, cardY + 22);
-
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '11px system-ui';
-    ctx.fillText('Chủ nợ: Đại Ca Bảy Thầu', cardX + cardW - 14, cardY + 42);
-
-    ctx.restore();
+  private renderDebtTicker(_ctx: CanvasRenderingContext2D): void {
+    // Replaced by integrated header stamp above for a cleaner, unified arcade aesthetic
   }
 
   /**
    * Renders modern Canva-styled interactive menu buttons
    */
   private renderMenuCards(ctx: CanvasRenderingContext2D, state: MenuRenderState, time: number): void {
-    const startX = 84;
-    const startY = 282;
-    const cardW = 440;
+    const startX = 70;
+    const startY = 250;
+    const cardW = 430;
     const cardH = 68;
     const gap = 16;
 
@@ -379,7 +363,7 @@ export class MenuProductionRenderer {
       const y = startY + index * (cardH + gap);
 
       // Selected card slides slightly right with elastic spring animation
-      const animOffset = isSelected ? 14 + Math.sin(time * 5) * 1.5 : 0;
+      const animOffset = isSelected ? 12 + Math.sin(time * 5) * 1.5 : 0;
       const curX = startX + animOffset;
 
       ctx.save();
@@ -387,9 +371,9 @@ export class MenuProductionRenderer {
       if (isSelected) {
         // 1. Glowing outer shadow
         ctx.shadowColor = 'rgba(249, 115, 22, 0.65)';
-        ctx.shadowBlur = 22;
+        ctx.shadowBlur = 20;
         ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 4;
+        ctx.shadowOffsetY = 3;
 
         // 2. Vibrant SXP sunset gradient card fill
         const btnGrad = ctx.createLinearGradient(curX, y, curX + cardW, y + cardH);
@@ -407,12 +391,12 @@ export class MenuProductionRenderer {
         ctx.stroke();
       } else {
         // Unselected card: Dark translucent glassmorphism
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
         ctx.beginPath();
         ctx.roundRect(curX, y, cardW, cardH, 14);
         ctx.fill();
 
-        ctx.strokeStyle = opt.available ? 'rgba(51, 65, 85, 0.8)' : 'rgba(51, 65, 85, 0.35)';
+        ctx.strokeStyle = opt.available ? 'rgba(71, 85, 105, 0.75)' : 'rgba(51, 65, 85, 0.35)';
         ctx.lineWidth = 1.2;
         ctx.stroke();
       }
@@ -422,7 +406,6 @@ export class MenuProductionRenderer {
       // Card Content
       ctx.save();
 
-      // Leading indicator icon or number
       if (isSelected) {
         // Animated scooter cursor
         ctx.fillStyle = '#ffffff';
@@ -487,16 +470,16 @@ export class MenuProductionRenderer {
    * Renders the footer keycap control pill
    */
   private renderFooterGuide(ctx: CanvasRenderingContext2D): void {
-    const barX = 84;
-    const barY = 560;
-    const barW = 440;
-    const barH = 42;
+    const barX = 70;
+    const barY = 530;
+    const barW = 430;
+    const barH = 40;
 
     ctx.save();
     // Glass pill background
     ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
     ctx.beginPath();
-    ctx.roundRect(barX, barY, barW, barH, 21);
+    ctx.roundRect(barX, barY, barW, barH, 20);
     ctx.fill();
 
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
@@ -506,13 +489,13 @@ export class MenuProductionRenderer {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#94a3b8';
     ctx.font = '12px monospace';
-    ctx.fillText('[ ↑ / ↓ ] CHỌN     [ ENTER / E / J ] BẮT ĐẦU', barX + barW / 2, barY + 26);
+    ctx.fillText('[ ↑ / ↓ ] CHỌN     [ ENTER / E / J ] BẮT ĐẦU', barX + barW / 2, barY + 25);
 
     // Build ID and engine label
     ctx.textAlign = 'left';
     ctx.fillStyle = '#64748b';
     ctx.font = '11px monospace';
-    ctx.fillText(`Phiên bản Vertical Slice • Chapter 1  •  ${BUILD_ID}`, barX + 6, barY + 68);
+    ctx.fillText(`Phiên bản Vertical Slice • Chapter 1  •  ${BUILD_ID}`, barX + 6, barY + 64);
 
     ctx.restore();
   }

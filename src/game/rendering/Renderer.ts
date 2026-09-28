@@ -2320,21 +2320,23 @@ export class Renderer {
       const timeStr = `${min}:${sec < 10 ? '0' : ''}${sec}`;
       const isUrgent = totalSec <= 30;
 
-      const badgeX = 520;
+      const badgeX = 820;
       const badgeY = 22;
-      const badgeW = 120;
+      const badgeW = 105;
       const badgeH = 26;
 
-      ctx.fillStyle = isUrgent ? 'rgba(185, 28, 28, 0.92)' : 'rgba(15, 23, 42, 0.88)';
-      ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
+      ctx.beginPath();
+      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 13);
+      ctx.fillStyle = isUrgent ? 'rgba(185, 28, 28, 0.94)' : 'rgba(15, 23, 42, 0.92)';
+      ctx.fill();
       ctx.strokeStyle = isUrgent ? '#fca5a5' : '#38bdf8';
       ctx.lineWidth = 1.5;
-      ctx.strokeRect(badgeX, badgeY, badgeW, badgeH);
+      ctx.stroke();
 
       ctx.font = 'bold 12px monospace';
       ctx.fillStyle = isUrgent ? '#ffffff' : '#e0f2fe';
       ctx.textAlign = 'center';
-      ctx.fillText(`⏱️ ${timeStr}`, badgeX + badgeW / 2, badgeY + 18);
+      ctx.fillText(`⏱️ ${timeStr}`, badgeX + badgeW / 2, badgeY + 17);
       ctx.restore();
     }
 

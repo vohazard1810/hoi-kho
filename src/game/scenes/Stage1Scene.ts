@@ -1473,10 +1473,10 @@ export class Stage1Scene implements Scene {
       if (dogHitbox) {
         if (!tryPerfectDodge(dogHitbox)) {
           const hits = this.combatSystem.evaluateHitbox(dogHitbox, [playerTarget]);
-          if (hits.length > 0 && !this.dogClamp.active && dog.isAlive && Math.random() < 0.35) {
+          if (hits.length > 0 && !this.dogClamp.active && dog.isAlive && Math.random() < 0.18) {
             this.dogClamp.active = true;
             this.dogClamp.dogId = dog.id;
-            this.dogClamp.mashRemaining = 3;
+            this.dogClamp.mashRemaining = 2;
             this.gameFeel.triggerComicText('CHÓ CẮN CHÂN!', this.player.x, this.player.y - 20, '#ef4444');
           }
         }

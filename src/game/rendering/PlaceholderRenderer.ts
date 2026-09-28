@@ -302,40 +302,74 @@ export class PlaceholderRenderer {
     ctx.ellipse(pos.x + player.width / 2, pos.y + player.height - 2, player.width * 0.45, 6, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Player Body: Sleek dark jacket with SXP orange collar and cap (stylized courier silhouette)
+    // Player Body: High-visibility SXP Orange Uniform & Safety Helmet (Hội Khờ)
     const isHurt = player.actionState === 'HURT';
-    const bodyColor = isHurt ? '#ef4444' : '#1e293b';
-    const accentColor = isHurt ? '#fca5a5' : '#ea580c';
+    const orangeUniform = isHurt ? '#ef4444' : '#ea580c';
+    const jacketTrim = isHurt ? '#fca5a5' : '#f97316';
+    const darkPants = isHurt ? '#7f1d1d' : '#1e293b';
 
-    // Body torso
-    ctx.fillStyle = bodyColor;
-    ctx.beginPath();
-    ctx.roundRect(pos.x + 4, pos.y + 16, player.width - 8, player.height - 18, 4);
-    ctx.fill();
-
-    // Orange SXP Courier vest / stripe
-    ctx.fillStyle = accentColor;
-    ctx.fillRect(pos.x + 6, pos.y + 24, player.width - 12, 10);
-
-    // Head / Cap
+    // Legs / Cargo pants & boots
+    ctx.fillStyle = darkPants;
+    ctx.fillRect(pos.x + 8, pos.y + player.height - 20, 8, 18);
+    ctx.fillRect(pos.x + player.width - 16, pos.y + player.height - 20, 8, 18);
     ctx.fillStyle = '#0f172a';
-    ctx.beginPath();
-    ctx.arc(pos.x + player.width / 2, pos.y + 12, 10, 0, Math.PI * 2);
-    ctx.fill();
-    // Cap visor
-    ctx.fillStyle = accentColor;
-    const visorX = player.facing === 'right' ? pos.x + player.width / 2 - 2 : pos.x + player.width / 2 - 12;
-    ctx.fillRect(visorX, pos.y + 6, 14, 5);
+    ctx.fillRect(pos.x + 6, pos.y + player.height - 6, 11, 6);
+    ctx.fillRect(pos.x + player.width - 17, pos.y + player.height - 6, 11, 6);
 
-    // Parcel backpack on back
-    ctx.fillStyle = '#b45309';
-    const backpackX = player.facing === 'right' ? pos.x - 4 : pos.x + player.width - 8;
+    // Torso: SXP Bright Orange Courier Jacket
+    ctx.fillStyle = orangeUniform;
     ctx.beginPath();
-    ctx.roundRect(backpackX, pos.y + 16, 12, 26, 3);
+    ctx.roundRect(pos.x + 5, pos.y + 18, player.width - 10, player.height - 36, 4);
+    ctx.fill();
+
+    // High-visibility reflective silver stripe
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(pos.x + 5, pos.y + 28, player.width - 10, 4);
+    ctx.fillStyle = jacketTrim;
+    ctx.fillRect(pos.x + 7, pos.y + 20, player.width - 14, 6);
+
+    // SXP Insulated Delivery Backpack
+    ctx.fillStyle = '#c2410c';
+    const backpackX = player.facing === 'right' ? pos.x - 6 : pos.x + player.width - 8;
+    ctx.beginPath();
+    ctx.roundRect(backpackX, pos.y + 16, 14, 28, 4);
     ctx.fill();
     ctx.strokeStyle = '#f59e0b';
     ctx.lineWidth = 1.5;
     ctx.stroke();
+    // Reflective cross-strap
+    ctx.fillStyle = '#fde047';
+    ctx.fillRect(backpackX + 2, pos.y + 28, 10, 3);
+
+    // Head: SXP Orange Safety Helmet with Visor
+    const headX = pos.x + player.width / 2;
+    const headY = pos.y + 11;
+    // Orange helmet shell
+    ctx.fillStyle = orangeUniform;
+    ctx.beginPath();
+    ctx.arc(headX, headY, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#c2410c';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Helmet front visor peak
+    ctx.fillStyle = '#0f172a';
+    const visorPeakX = player.facing === 'right' ? headX - 1 : headX - 13;
+    ctx.fillRect(visorPeakX, headY - 1, 14, 5);
+
+    // Face / Tinted eye slit
+    ctx.fillStyle = '#fed7aa';
+    const faceX = player.facing === 'right' ? headX : headX - 8;
+    ctx.fillRect(faceX, headY + 3, 8, 6);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(player.facing === 'right' ? headX + 3 : headX - 5, headY + 4, 3, 2);
+
+    // Helmet "SXP" text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 6px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SXP', headX, headY - 3);
 
     // Subtle loading shimmer
     const shimmer = (Math.sin(Date.now() * 0.008) + 1) * 0.5;
@@ -1324,8 +1358,8 @@ export class PlaceholderRenderer {
         ctx.clip();
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        // Precise crop centered on face & cap from 260x260 image
-        ctx.drawImage(portrait, 90, 0, 145, 145, portX + 2, portY + 2, portW - 4, portH - 4);
+        // Full portrait of Hội Khờ with SXP orange helmet and confident grin
+        ctx.drawImage(portrait, 0, 0, portrait.naturalWidth, portrait.naturalHeight, portX + 2, portY + 2, portW - 4, portH - 4);
         ctx.restore();
         renderedSprite = true;
       } else {
@@ -1378,10 +1412,12 @@ export class PlaceholderRenderer {
     // Rank pill below portrait
     const pillY = portY + portH + 4;
     ctx.fillStyle = 'rgba(234, 88, 12, 0.25)';
-    ctx.fillRect(portX, pillY, portW, 14);
+    ctx.beginPath();
+    ctx.roundRect(portX, pillY, portW, 14, 4);
+    ctx.fill();
     ctx.strokeStyle = 'rgba(249, 115, 22, 0.6)';
     ctx.lineWidth = 1;
-    ctx.strokeRect(portX, pillY, portW, 14);
+    ctx.stroke();
     ctx.fillStyle = '#fbbf24';
     ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'center';
@@ -1396,17 +1432,19 @@ export class PlaceholderRenderer {
     const parcelY = cardY + 54;
     const momY = cardY + 78;
 
-    // Helper to draw beveled slot
+    // Helper to draw modern rounded pill slot
     const drawSlotBackground = (y: number) => {
       ctx.fillStyle = '#07101e';
-      ctx.fillRect(barX, y, barW, barH);
-      ctx.strokeStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.roundRect(barX, y, barW, barH, 5);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.18)';
       ctx.lineWidth = 1;
-      ctx.strokeRect(barX, y, barW, barH);
+      ctx.stroke();
       // Subtle background grid hatch
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
       for (let gx = barX + 28; gx < barX + barW; gx += 28) {
-        ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx, y + barH); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(gx, y + 1); ctx.lineTo(gx, y + barH - 1); ctx.stroke();
       }
     };
 
@@ -1431,11 +1469,12 @@ export class PlaceholderRenderer {
     }
     const currentHpW = Math.max(0, (barW - 4) * hpPct);
     ctx.fillStyle = hpGrad;
-    ctx.fillRect(barX + 2, hpY + 2, currentHpW, barH - 4);
-
     if (currentHpW > 0) {
+      ctx.beginPath();
+      ctx.roundRect(barX + 2, hpY + 2, currentHpW, barH - 4, 3);
+      ctx.fill();
       ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
-      ctx.fillRect(barX + 2, hpY + 2, currentHpW, 4);
+      ctx.fillRect(barX + 2, hpY + 2, currentHpW, 3);
     }
 
     ctx.fillStyle = '#ffffff';
@@ -1471,11 +1510,12 @@ export class PlaceholderRenderer {
     }
     const currentParcelW = Math.max(0, (barW - 4) * parcelPct);
     ctx.fillStyle = parcelGrad;
-    ctx.fillRect(barX + 2, parcelY + 2, currentParcelW, barH - 4);
-
     if (currentParcelW > 0) {
+      ctx.beginPath();
+      ctx.roundRect(barX + 2, parcelY + 2, currentParcelW, barH - 4, 3);
+      ctx.fill();
       ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
-      ctx.fillRect(barX + 2, parcelY + 2, currentParcelW, 4);
+      ctx.fillRect(barX + 2, parcelY + 2, currentParcelW, 3);
     }
 
     ctx.fillStyle = '#ffffff';
@@ -1500,11 +1540,12 @@ export class PlaceholderRenderer {
 
     const currentMomW = Math.max(0, (barW - 4) * momentumPct);
     ctx.fillStyle = momGrad;
-    ctx.fillRect(barX + 2, momY + 2, currentMomW, barH - 4);
-
     if (currentMomW > 0) {
+      ctx.beginPath();
+      ctx.roundRect(barX + 2, momY + 2, currentMomW, barH - 4, 3);
+      ctx.fill();
       ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-      ctx.fillRect(barX + 2, momY + 2, currentMomW, 4);
+      ctx.fillRect(barX + 2, momY + 2, currentMomW, 3);
     }
 
     if (isQReady) {
@@ -1513,7 +1554,9 @@ export class PlaceholderRenderer {
       ctx.shadowBlur = 12 * pulse;
       ctx.strokeStyle = '#fbbf24';
       ctx.lineWidth = 2;
-      ctx.strokeRect(barX, momY, barW, barH);
+      ctx.beginPath();
+      ctx.roundRect(barX, momY, barW, barH, 5);
+      ctx.stroke();
       ctx.fillStyle = '#fef08a';
       ctx.font = '900 11px monospace';
       ctx.textAlign = 'right';

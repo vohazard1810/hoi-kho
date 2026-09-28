@@ -29,7 +29,9 @@ export class HubProductionRenderer {
       const [bg, coba, playerIdle] = await Promise.all([
         this.load('/assets/world/hub/hub_sxp_interior.png'),
         this.load('/assets/npc/coba/coba_idle.png'),
-        this.load('/assets/staging_hd/player/player_idle.png').catch(() => null),
+        this.load('/assets/staging_hd/player/player_idle.png')
+          .catch(() => this.load('/assets/staging/player/player_idle.png'))
+          .catch(() => null),
       ]);
       this.background = bg;
       this.coba = coba;
@@ -79,10 +81,11 @@ export class HubProductionRenderer {
    * is still verifying secondary states (jump/dodge/ultimate), completely preventing any dark box placeholder.
    */
   public renderPlayerFallback(ctx: CanvasRenderingContext2D, camera: Camera, player: Player): boolean {
-    if (!this.playerIdle) return false;
+    if (!this.playerIdle || this.playerIdle.naturalWidth <= 0 || this.playerIdle.naturalHeight <= 0) return false;
     const feet = camera.worldToScreen(player.x + player.width / 2, player.y + player.height);
-    const frameW = 543;
-    const frameH = 724;
+    const frameCount = 4;
+    const frameW = Math.round(this.playerIdle.naturalWidth / frameCount);
+    const frameH = this.playerIdle.naturalHeight;
     const h = 78.6 * HUB_HUMAN_SCALE;
     const w = h * (frameW / frameH);
 
