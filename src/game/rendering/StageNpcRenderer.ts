@@ -4,6 +4,8 @@ import { AlleyBrat } from '../entities/AlleyBrat';
 import { AlleyGuard } from '../entities/AlleyGuard';
 import { SaboteurShipper } from '../entities/SaboteurShipper';
 import { AlleyRat } from '../entities/AlleyRat';
+import { Thug } from '../entities/Thug';
+import { Rival } from '../entities/Rival';
 
 export class StageNpcRenderer {
   private chutu: HTMLImageElement | null = null;
@@ -60,6 +62,46 @@ export class StageNpcRenderer {
     return this.ready ? this.chutu : null;
   }
 
+  /**
+   * Dual-layer contact shadow for perfect environment grounding:
+   * 1. Soft dusk ambient shadow (wider, cast slightly according to sunset angle)
+   * 2. Crisp dark occlusion shadow (tight under soles/wheels/paws)
+   */
+  private drawGroundedShadow(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    radiusX: number,
+    radiusY: number
+  ): void {
+    ctx.save();
+    // 1. Soft ambient dusk contact
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.28)';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 1, radiusX * 1.25, radiusY * 1.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2. Crisp occlusion shadow directly beneath soles/wheels
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.58)';
+    ctx.beginPath();
+    ctx.ellipse(x, y - 1, radiusX * 0.85, radiusY * 0.75, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /**
+   * Environment lighting and comic combat grading:
+   * - In normal state: enhances contrast and warm sunset saturation matching Stage 1 dusk.
+   * - In hurt state: crisp white/comic hit-flash.
+   */
+  private applyEnvironmentBlend(ctx: CanvasRenderingContext2D, isHurt: boolean = false): void {
+    if (isHurt) {
+      ctx.filter = 'brightness(1.9) saturate(0.65)';
+    } else {
+      ctx.filter = 'brightness(1.02) contrast(1.02) saturate(1.05)';
+    }
+  }
+
   public render(ctx: CanvasRenderingContext2D, camera: Camera, npc: NPC): boolean {
     if (npc.role === 'chutu') {
       if (!this.ready || !this.chutu) return false;
@@ -78,12 +120,13 @@ export class StageNpcRenderer {
       ctx.ellipse(feet.x, feet.y, 48 + pulse * 8, 12 + pulse * 2, 0, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Shadow
-      ctx.fillStyle = 'rgba(2,6,23,0.4)';
-      ctx.beginPath(); ctx.ellipse(feet.x, feet.y, 32, 5, 0, 0, Math.PI * 2); ctx.fill();
+      // Dual-layer grounded shadow
+      this.drawGroundedShadow(ctx, feet.x, feet.y, 36, 6);
 
-      // Character sprite
+      // Character sprite with sunset grading
+      this.applyEnvironmentBlend(ctx, false);
       ctx.drawImage(this.chutu, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
+      ctx.filter = 'none';
 
       // Animated callout bubble
       const bob = Math.sin(Date.now() * 0.005) * 4;
@@ -110,13 +153,12 @@ export class StageNpcRenderer {
       ctx.imageSmoothingQuality = 'high';
 
       // Floor Shadow
-      ctx.fillStyle = 'rgba(2, 6, 23, 0.42)';
-      ctx.beginPath();
-      ctx.ellipse(feet.x, feet.y - 1, w * 0.44, 7, 0, 0, Math.PI * 2);
-      ctx.fill();
+      this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.44, 7);
 
-      // Sprite
+      // Sprite with sunset blend
+      this.applyEnvironmentBlend(ctx, false);
       ctx.drawImage(this.chiba, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
+      ctx.filter = 'none';
 
       // Floating friendly callout bubble
       const bob = Math.sin(Date.now() * 0.004) * 3;
@@ -146,13 +188,12 @@ export class StageNpcRenderer {
       ctx.imageSmoothingQuality = 'high';
 
       // Floor Shadow
-      ctx.fillStyle = 'rgba(2, 6, 23, 0.42)';
-      ctx.beginPath();
-      ctx.ellipse(feet.x, feet.y - 1, w * 0.42, 6, 0, 0, Math.PI * 2);
-      ctx.fill();
+      this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.42, 6);
 
-      // Sprite
+      // Sprite with sunset blend
+      this.applyEnvironmentBlend(ctx, false);
       ctx.drawImage(this.chubay, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
+      ctx.filter = 'none';
 
       // Floating callout bubble
       const bob = Math.sin(Date.now() * 0.004 + 1) * 3;
@@ -181,8 +222,10 @@ export class StageNpcRenderer {
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
-      // Sprite on balcony
+      // Sprite on balcony with sunset blend
+      this.applyEnvironmentBlend(ctx, false);
       ctx.drawImage(this.banam, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
+      ctx.filter = 'none';
 
       // Ambient talk bubble
       const bob = Math.sin(Date.now() * 0.0035 + 2) * 3;
@@ -216,14 +259,12 @@ export class StageNpcRenderer {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    // Shadow
-    ctx.fillStyle = 'rgba(2, 6, 23, 0.4)';
-    ctx.beginPath();
-    ctx.ellipse(feet.x, feet.y - 1, w * 0.32, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // Dual-layer shadow
+    this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.32, 5);
 
     const flip = brat.facing === 'left';
     ctx.save();
+    this.applyEnvironmentBlend(ctx, brat.state === 'KO');
     if (flip) {
       ctx.translate(feet.x, 0);
       ctx.scale(-1, 1);
@@ -284,21 +325,20 @@ export class StageNpcRenderer {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    // Shadow
-    ctx.fillStyle = 'rgba(2, 6, 23, 0.42)';
-    ctx.beginPath();
-    ctx.ellipse(feet.x, feet.y - 1, w * 0.38, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // Dual-layer shadow
+    this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.38, 6);
 
-    // The guard image faces right with shield in front. If facing left, flip horizontally
     const flip = guard.facing === 'left';
     ctx.save();
+    this.applyEnvironmentBlend(ctx, guard.state === 'HURT');
+    const shakeX = guard.state === 'HURT' ? Math.sin(Date.now() * 0.05) * 3 : 0;
+
     if (flip) {
-      ctx.translate(feet.x, 0);
+      ctx.translate(feet.x + shakeX, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(this.guard, -Math.round(w / 2), Math.round(feet.y - h), w, h);
     } else {
-      ctx.drawImage(this.guard, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
+      ctx.drawImage(this.guard, Math.round(feet.x - w / 2) + shakeX, Math.round(feet.y - h), w, h);
     }
     ctx.restore();
 
@@ -361,20 +401,20 @@ export class StageNpcRenderer {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    // Shadow
-    ctx.fillStyle = 'rgba(2, 6, 23, 0.42)';
-    ctx.beginPath();
-    ctx.ellipse(feet.x, feet.y - 1, w * 0.36, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // Dual-layer shadow
+    this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.36, 6);
 
     const flip = sab.facing === 'left';
     ctx.save();
+    this.applyEnvironmentBlend(ctx, sab.state === 'HURT');
+    const shakeX = sab.state === 'HURT' ? Math.sin(Date.now() * 0.05) * 3 : 0;
+
     if (flip) {
-      ctx.translate(feet.x, 0);
+      ctx.translate(feet.x + shakeX, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(this.saboteur, -Math.round(w / 2), Math.round(feet.y - h), w, h);
     } else {
-      ctx.drawImage(this.saboteur, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
+      ctx.drawImage(this.saboteur, Math.round(feet.x - w / 2) + shakeX, Math.round(feet.y - h), w, h);
     }
     ctx.restore();
 
@@ -389,6 +429,11 @@ export class StageNpcRenderer {
       ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
       ctx.fillStyle = hpRatio > 0.4 ? '#a855f7' : '#ef4444';
       ctx.fillRect(barX, barY, barW * hpRatio, barH);
+
+      ctx.fillStyle = '#f3e8ff';
+      ctx.font = 'bold 10px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('GIAN THƯƠNG', feet.x, feet.y - h - 12);
     } else {
       ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
       ctx.fillRect(feet.x - 30, feet.y - h - 20, 60, 16);
@@ -412,20 +457,20 @@ export class StageNpcRenderer {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    // Shadow
-    ctx.fillStyle = 'rgba(2, 6, 23, 0.38)';
-    ctx.beginPath();
-    ctx.ellipse(feet.x, feet.y - 1, w * 0.4, 4, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // Dual-layer shadow
+    this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.4, 4);
 
     const flip = rat.facing === 'left';
     ctx.save();
+    this.applyEnvironmentBlend(ctx, rat.state === 'HURT');
+    const shakeX = rat.state === 'HURT' ? Math.sin(Date.now() * 0.05) * 3 : 0;
+
     if (flip) {
-      ctx.translate(feet.x, 0);
+      ctx.translate(feet.x + shakeX, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(this.rat, -Math.round(w / 2), Math.round(feet.y - h), w, h);
     } else {
-      ctx.drawImage(this.rat, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
+      ctx.drawImage(this.rat, Math.round(feet.x - w / 2) + shakeX, Math.round(feet.y - h), w, h);
     }
     ctx.restore();
 
@@ -440,6 +485,162 @@ export class StageNpcRenderer {
       ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
       ctx.fillStyle = hpRatio > 0.4 ? '#ef4444' : '#dc2626';
       ctx.fillRect(barX, barY, barW * hpRatio, barH);
+    }
+
+    ctx.restore();
+    return true;
+  }
+
+  /**
+   * Renders the hulking Debt-Collector Thug (Giang Hồ Đòi Nợ F89) with high-res cel-shaded sprite
+   */
+  public renderEnforcer(ctx: CanvasRenderingContext2D, camera: Camera, thug: Thug): boolean {
+    if (!this.enforcer) return false;
+    const feet = camera.worldToScreen(thug.x + thug.width / 2, thug.y + thug.height);
+    const h = 152;
+    const w = h * (this.enforcer.naturalWidth / this.enforcer.naturalHeight);
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Dual-layer grounded shadow
+    this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.36, 7);
+
+    if (!thug.isAlive || thug.state === 'KO') {
+      ctx.globalAlpha = 0.45;
+    }
+
+    const flip = thug.facing === 'left';
+    ctx.save();
+    const isHurt = thug.state === 'HURT';
+    this.applyEnvironmentBlend(ctx, isHurt);
+
+    const shakeX = isHurt ? Math.sin(Date.now() * 0.05) * 3 : 0;
+
+    if (flip) {
+      ctx.translate(feet.x + shakeX, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(this.enforcer, -Math.round(w / 2), Math.round(feet.y - h), w, h);
+    } else {
+      ctx.drawImage(this.enforcer, Math.round(feet.x - w / 2) + shakeX, Math.round(feet.y - h), w, h);
+    }
+    ctx.restore();
+
+    // Attack / Charge visual cues
+    if (thug.state === 'CHARGE_TELEGRAPH') {
+      ctx.fillStyle = '#ef4444';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚡ RUSH LAO TỚI ⚡', feet.x, feet.y - h - 22);
+    } else if (thug.state === 'HEAVY_TELEGRAPH') {
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('💥 VỤT GẬY NẶNG (NÉ LÙI) 💥', feet.x, feet.y - h - 22);
+    }
+
+    // Health bar & status
+    if (thug.isAlive && thug.state !== 'KO') {
+      const hpRatio = Math.max(0, thug.hp / thug.maxHp);
+      const barW = 64;
+      const barH = 5;
+      const barX = feet.x - barW / 2;
+      const barY = feet.y - h - 8;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+      ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+      ctx.fillStyle = hpRatio > 0.3 ? '#ef4444' : '#b91c1c';
+      ctx.fillRect(barX, barY, barW * hpRatio, barH);
+
+      ctx.fillStyle = '#fca5a5';
+      ctx.font = 'bold 10px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('GIANG HỒ ĐÒI NỢ', feet.x, feet.y - h - 12);
+    } else if (thug.state === 'KO') {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(feet.x - 32, feet.y - h - 22, 64, 16);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = 'bold 11px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('😵 GỤC NGÃ', feet.x, feet.y - h - 10);
+    }
+
+    ctx.restore();
+    return true;
+  }
+
+  /**
+   * Renders the Rival Shipper with high-res cel-shaded courier sprite and racing crimson grading
+   */
+  public renderRivalShipper(ctx: CanvasRenderingContext2D, camera: Camera, rival: Rival): boolean {
+    if (!this.saboteur) return false;
+    const feet = camera.worldToScreen(rival.x + rival.width / 2, rival.y + rival.height);
+    const h = 130;
+    const w = h * (this.saboteur.naturalWidth / this.saboteur.naturalHeight);
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Dual-layer shadow
+    this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.36, 6);
+
+    if (!rival.isAlive || rival.state === 'KO') {
+      ctx.globalAlpha = 0.45;
+    }
+
+    const flip = rival.facing === 'left';
+    ctx.save();
+    const isHurt = rival.state === 'HURT';
+    if (isHurt) {
+      ctx.filter = 'brightness(1.9) saturate(0.6)';
+    } else {
+      // Crimson racing jacket tint (hue-rotate from saboteur purple to racing red)
+      ctx.filter = 'hue-rotate(295deg) saturate(1.3) brightness(1.05)';
+    }
+
+    const shakeX = isHurt ? Math.sin(Date.now() * 0.05) * 3 : 0;
+
+    if (flip) {
+      ctx.translate(feet.x + shakeX, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(this.saboteur, -Math.round(w / 2), Math.round(feet.y - h), w, h);
+    } else {
+      ctx.drawImage(this.saboteur, Math.round(feet.x - w / 2) + shakeX, Math.round(feet.y - h), w, h);
+    }
+    ctx.restore();
+
+    // Attack state visual cue
+    if (rival.state === 'ATTACK_STARTUP') {
+      ctx.fillStyle = '#f43f5e';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚠️ CƯỚP ĐƠN! (ĐẤM)', feet.x, feet.y - h - 22);
+    }
+
+    // Health bar & status
+    if (rival.isAlive && rival.state !== 'KO') {
+      const hpRatio = Math.max(0, rival.hp / rival.maxHp);
+      const barW = 50;
+      const barH = 4;
+      const barX = feet.x - barW / 2;
+      const barY = feet.y - h - 8;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+      ctx.fillStyle = hpRatio > 0.3 ? '#f43f5e' : '#be123c';
+      ctx.fillRect(barX, barY, barW * hpRatio, barH);
+
+      ctx.fillStyle = '#fecdd3';
+      ctx.font = 'bold 10px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('SHIPPER ĐỐI THỦ', feet.x, feet.y - h - 12);
+    } else if (rival.state === 'KO') {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillRect(feet.x - 30, feet.y - h - 20, 60, 16);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = 'bold 11px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('😵 BỎ ĐƠN', feet.x, feet.y - h - 8);
     }
 
     ctx.restore();

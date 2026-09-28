@@ -108,6 +108,7 @@ export class Stage1Scene implements Scene {
   private phoneAlert: { title: string; text: string; timer: number; icon: string } | null = null;
   private stageTimer = 160;
   private triggeredPhoneAlerts = new Set<string>();
+  private showCanvaInspector = false;
 
   // Interaction prompt & progress
   private nearbyPrompt: string | null = null;
@@ -591,6 +592,17 @@ export class Stage1Scene implements Scene {
 
   public update(dt: number, input: Input): void {
     const objective = ObjectiveSystem.getInstance();
+
+    // Toggle Canva UI Inspector modal via P key
+    if (typeof input.isKeyJustPressed === 'function' && input.isKeyJustPressed('KeyP')) {
+      this.showCanvaInspector = !this.showCanvaInspector;
+    }
+    if (this.showCanvaInspector) {
+      if (input.isJustPressed('cancel') || input.isJustPressed('interact')) {
+        this.showCanvaInspector = false;
+      }
+      return;
+    }
 
     // 0. Delivery Failure checks: Parcel Destroyed (0%) or Time Limit Expired
     if (objective.parcelCondition <= 0) {
@@ -1782,5 +1794,16 @@ export class Stage1Scene implements Scene {
       stageHazards
     );
     renderer.renderDialogueOverlay(this.dialogue.getSnapshot());
+
+    if (this.showCanvaInspector) {
+      renderer.renderDeliveryInspectorModal(
+        Math.round(objective.parcelCondition),
+        this.player.hp,
+        this.player.maxHp,
+        this.player.tapeCharges,
+        this.player.maxTapeCharges,
+        20_000_000
+      );
+    }
   }
 }

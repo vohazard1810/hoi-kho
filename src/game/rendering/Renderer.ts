@@ -27,6 +27,7 @@ import { DialogueSnapshot } from '../systems/DialogueSystem';
 import { HUB_HUMAN_SCALE, HubProductionRenderer } from './HubProductionRenderer';
 import { HubTutorialSnapshot } from '../systems/HubTutorialSystem';
 import { StageNpcRenderer } from './StageNpcRenderer';
+import { CanvaUiRenderer } from './CanvaUiRenderer';
 import { BUILD_ID } from '../config/version';
 import { TrainingTarget } from '../systems/TrainingTarget';
 import { ProductionVisualsV19 } from './ProductionVisualsV19';
@@ -419,6 +420,9 @@ export class Renderer {
   }
 
   private renderEntityRival(camera: Camera, rival: Rival, visualScale: number = 1): void {
+    if (this.stageNpc.renderRivalShipper(this.ctx, camera, rival)) {
+      return;
+    }
     const assetManager = AssetManager.getInstance();
     const rivalSet = assetManager.getCharacterSet('rival');
 
@@ -476,6 +480,9 @@ export class Renderer {
   }
 
   private renderEntityThug(camera: Camera, thug: Thug, visualScale: number = 1): void {
+    if (this.stageNpc.renderEnforcer(this.ctx, camera, thug)) {
+      return;
+    }
     const assetManager = AssetManager.getInstance();
     const thugSet = assetManager.getCharacterSet('thug');
 
@@ -2831,7 +2838,28 @@ export class Renderer {
 
   public renderResultScene(result: DeliveryResultData, revealProgress: number = 1): void {
     this.clear();
-    PlaceholderRenderer.renderResult(this.ctx, this.canvas.width, this.canvas.height, result, revealProgress);
+    CanvaUiRenderer.renderCanvaThermalReceipt(this.ctx, this.canvas.width, this.canvas.height, result, revealProgress);
+  }
+
+  public renderDeliveryInspectorModal(
+    parcelHpPct: number,
+    playerHp: number,
+    playerMaxHp: number,
+    tapeCharges: number,
+    maxTape: number,
+    debtAmount: number = 20_000_000
+  ): void {
+    CanvaUiRenderer.renderDeliveryInspectorModal(
+      this.ctx,
+      this.canvas.width,
+      this.canvas.height,
+      parcelHpPct,
+      playerHp,
+      playerMaxHp,
+      tapeCharges,
+      maxTape,
+      debtAmount
+    );
   }
 
   public renderEpilogueCutscene(result: DeliveryResultData): void {

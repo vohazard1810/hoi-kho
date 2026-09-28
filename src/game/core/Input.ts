@@ -115,6 +115,10 @@ export class Input {
     return this.isJustPressed(action);
   }
 
+  public isKeyJustPressed(code: string): boolean {
+    return this.justPressedKeys.has(code);
+  }
+
   /**
    * Check if action's key was just released this simulation frame (one-shot edge)
    */
