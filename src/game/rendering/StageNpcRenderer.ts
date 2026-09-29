@@ -105,6 +105,7 @@ export class StageNpcRenderer {
 
   public render(ctx: CanvasRenderingContext2D, camera: Camera, npc: NPC, playerX?: number): boolean {
     const isNear = playerX !== undefined && Math.abs(playerX - (npc.x + npc.width / 2)) < 90;
+    const time = performance.now() / 1000;
 
     if (npc.role === 'chutu') {
       if (!this.ready || !this.chutu) return false;
@@ -126,10 +127,16 @@ export class StageNpcRenderer {
       // Dual-layer grounded shadow
       this.drawGroundedShadow(ctx, feet.x, feet.y, 34, 6);
 
-      // Character sprite with sunset grading
+      // Subtle breathing idle animation
+      const breathScaleY = 1 + Math.sin(time * 2.2) * 0.012;
+      const breathScaleX = 1 - Math.sin(time * 2.2) * 0.008;
+
+      ctx.save();
+      ctx.translate(feet.x, feet.y);
+      ctx.scale(breathScaleX, breathScaleY);
       this.applyEnvironmentBlend(ctx, false);
-      ctx.drawImage(this.chutu, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
-      ctx.filter = 'none';
+      ctx.drawImage(this.chutu, -Math.round(w / 2), -h, w, h);
+      ctx.restore();
 
       // Context-sensitive callout: ONLY show text bubble when player is within range!
       if (isNear || (playerX !== undefined && Math.abs(playerX - (npc.x + npc.width / 2)) < 130)) {
@@ -150,20 +157,71 @@ export class StageNpcRenderer {
     }
 
     if (npc.role === 'chiba' && this.chiba) {
-      const feet = camera.worldToScreen(npc.x + npc.width / 2 + 8, npc.y + npc.height);
+      // Ground firmly on sidewalk pavement (Y=622) so sandals and wheels sink 2px into concrete cracks
+      const screenX = camera.worldToScreen(npc.x + npc.width / 2 + 8, 0).x;
+      const groundY = camera.worldToScreen(0, 622).y;
+      const feet = { x: screenX, y: groundY };
       const h = 126;
       const w = h * (this.chiba.naturalWidth / this.chiba.naturalHeight);
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
-      // Floor Shadow under feet and cart wheels
-      this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.44, 6);
+      // Dual contact shadows: firmly under sandals and cart wheels
+      this.drawGroundedShadow(ctx, feet.x - w * 0.22, feet.y, 22, 5);
+      this.drawGroundedShadow(ctx, feet.x + w * 0.24, feet.y, 28, 5);
 
-      // Sprite with sunset blend
+      // Subtle breathing & gentle vertical bobbing
+      const breathScaleY = 1 + Math.sin(time * 2.4) * 0.012;
+      const breathScaleX = 1 - Math.sin(time * 2.4) * 0.008;
+      const torsoBounce = Math.sin(time * 2.4) * 0.7;
+
+      ctx.save();
+      ctx.translate(feet.x, feet.y);
+      ctx.scale(breathScaleX, breathScaleY);
       this.applyEnvironmentBlend(ctx, false);
-      ctx.drawImage(this.chiba, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
-      ctx.filter = 'none';
+      ctx.drawImage(this.chiba, -Math.round(w / 2), -h + torsoBounce, w, h);
+      ctx.restore();
+
+      // Rotating sugarcane press crank wheel with metallic glint
+      ctx.save();
+      ctx.translate(feet.x + w * 0.12, feet.y - h * 0.52);
+      ctx.rotate(time * 3.5);
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(-6, 0);
+      ctx.lineTo(6, 0);
+      ctx.stroke();
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(6, 0, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Rising crushed ice mist vapor particles from ice box
+      ctx.save();
+      for (let i = 0; i < 3; i++) {
+        const pTime = (time * 0.75 + i * 0.6) % 1.8;
+        const pProgress = pTime / 1.8;
+        const pX = feet.x + w * 0.28 + Math.sin(time * 2.0 + i) * 5;
+        const pY = feet.y - h * 0.46 - pProgress * 24;
+        const pAlpha = (1 - pProgress) * 0.38;
+        ctx.fillStyle = `rgba(240, 249, 255, ${pAlpha})`;
+        ctx.beginPath();
+        ctx.arc(pX, pY, 2.5 + pProgress * 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Lime slice glint on iced sugarcane juice cup
+      ctx.save();
+      const glintPulse = 0.4 + Math.sin(time * 3.5) * 0.35;
+      ctx.fillStyle = `rgba(254, 240, 138, ${glintPulse})`;
+      ctx.beginPath();
+      ctx.arc(feet.x - w * 0.28, feet.y - h * 0.62, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
 
       // Context-sensitive callout: ONLY show bubble when player is nearby (< 90px)
       if (isNear) {
@@ -187,21 +245,53 @@ export class StageNpcRenderer {
     }
 
     if (npc.role === 'chubay' && this.chubay) {
-      const feet = camera.worldToScreen(npc.x + npc.width / 2, npc.y + npc.height);
-      // Realistic sitting height on low plastic stool (88px vs standing player ~135px)
-      const h = 88;
+      // Ground firmly on sidewalk pavement (Y=622) so stool legs, toolbox, and sandals plant solidly
+      const screenX = camera.worldToScreen(npc.x + npc.width / 2, 0).x;
+      const groundY = camera.worldToScreen(0, 622).y;
+      const feet = { x: screenX, y: groundY };
+      const h = 92;
       const w = h * (this.chubay.naturalWidth / this.chubay.naturalHeight);
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
-      // Floor Shadow under stool legs and tire
-      this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.42, 5);
+      // Triple grounded contact shadows: under toolbox, stool/front sandal, and right sandal
+      this.drawGroundedShadow(ctx, feet.x - w * 0.32, feet.y - 4, 30, 5);
+      this.drawGroundedShadow(ctx, feet.x, feet.y, 28, 5);
+      this.drawGroundedShadow(ctx, feet.x + w * 0.34, feet.y - 2, 18, 4);
 
-      // Sprite with sunset blend
+      // Sitting posture breathing deformation
+      const breathScaleY = 1 + Math.sin(time * 2.0) * 0.015;
+      const breathScaleX = 1 - Math.sin(time * 2.0) * 0.008;
+
+      ctx.save();
+      ctx.translate(feet.x, feet.y);
+      ctx.scale(breathScaleX, breathScaleY);
       this.applyEnvironmentBlend(ctx, false);
-      ctx.drawImage(this.chubay, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
-      ctx.filter = 'none';
+      ctx.drawImage(this.chubay, -Math.round(w / 2), -h, w, h);
+      ctx.restore();
+
+      // Tire pump air hiss / steam puff every 2.8s
+      const pumpPhase = (time % 2.8) / 2.8;
+      if (pumpPhase < 0.35) {
+        const puffProg = pumpPhase / 0.35;
+        const puffAlpha = (1 - puffProg) * 0.55;
+        ctx.save();
+        ctx.fillStyle = `rgba(241, 245, 249, ${puffAlpha})`;
+        ctx.beginPath();
+        ctx.arc(feet.x - w * 0.38 - puffProg * 14, feet.y - 10 - puffProg * 6, 2.5 + puffProg * 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Wrench metallic glint highlight in hand
+      ctx.save();
+      const wrenchGlint = 0.35 + Math.sin(time * 2.8) * 0.35;
+      ctx.fillStyle = `rgba(255, 255, 255, ${wrenchGlint})`;
+      ctx.beginPath();
+      ctx.arc(feet.x + w * 0.22, feet.y - h * 0.56, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
 
       // Context-sensitive callout: ONLY show bubble when player is nearby (< 90px)
       if (isNear) {
@@ -226,17 +316,31 @@ export class StageNpcRenderer {
 
     if (npc.role === 'banam' && this.banam) {
       const feet = camera.worldToScreen(npc.x + npc.width / 2, npc.y + npc.height);
-      // Proportionate grandmother behind balcony railing
-      const h = 96;
+      const h = 98;
       const w = h * (this.banam.naturalWidth / this.banam.naturalHeight);
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
-      // Sprite on balcony with sunset blend
+      // Gentle grandmother breathing & head nod
+      const nod = Math.sin(time * 1.5) * 0.8;
+      const breathScaleY = 1 + Math.sin(time * 1.8) * 0.01;
+
+      ctx.save();
+      ctx.translate(feet.x, feet.y);
+      ctx.scale(1, breathScaleY);
       this.applyEnvironmentBlend(ctx, false);
-      ctx.drawImage(this.banam, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
-      ctx.filter = 'none';
+      ctx.drawImage(this.banam, -Math.round(w / 2), -h + nod, w, h);
+      ctx.restore();
+
+      // Balcony orchid gentle blossom glow / breeze sway
+      ctx.save();
+      const orchidGlow = 0.25 + Math.sin(time * 2.2) * 0.2;
+      ctx.fillStyle = `rgba(232, 121, 249, ${orchidGlow})`;
+      ctx.beginPath();
+      ctx.arc(feet.x - w * 0.35, feet.y - h * 0.62 + Math.sin(time * 1.8) * 1.2, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
 
       // Context-sensitive talk bubble: ONLY show when player is nearby
       if (isNear) {
@@ -264,10 +368,11 @@ export class StageNpcRenderer {
 
   public renderBrat(ctx: CanvasRenderingContext2D, camera: Camera, brat: AlleyBrat): boolean {
     if (!this.brat) return false;
-    const feet = camera.worldToScreen(brat.x + brat.width / 2, brat.y + brat.height);
-    // Proportionate 9-year-old child standing on awning (62px vs adult player 135px)
+    // Ground +10px offset firmly onto wooden awning surface
+    const feet = camera.worldToScreen(brat.x + brat.width / 2, brat.y + brat.height + 10);
     const h = 62;
     const w = h * (this.brat.naturalWidth / this.brat.naturalHeight);
+    const time = performance.now() / 1000;
 
     ctx.save();
     ctx.imageSmoothingEnabled = true;
@@ -277,21 +382,25 @@ export class StageNpcRenderer {
     this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.32, 4);
 
     const flip = brat.facing === 'left';
+    const isKO = brat.state === 'KO';
+    const bratBounce = isKO ? 0 : Math.sin(time * 5.0) * 1.0;
+    const aimBob = brat.state === 'AIM' ? Math.sin(time * 6.0) * 2.0 : 0;
+
     ctx.save();
-    this.applyEnvironmentBlend(ctx, brat.state === 'KO');
+    this.applyEnvironmentBlend(ctx, isKO);
     if (flip) {
       ctx.translate(feet.x, 0);
       ctx.scale(-1, 1);
-      ctx.drawImage(this.brat, -Math.round(w / 2), Math.round(feet.y - h), w, h);
+      ctx.drawImage(this.brat, -Math.round(w / 2), Math.round(feet.y - h + bratBounce), w, h);
     } else {
-      ctx.drawImage(this.brat, Math.round(feet.x - w / 2), Math.round(feet.y - h), w, h);
+      ctx.drawImage(this.brat, Math.round(feet.x - w / 2), Math.round(feet.y - h + bratBounce), w, h);
     }
     ctx.restore();
 
     // Aiming laser beam when in AIM state
     if (brat.state === 'AIM') {
       const muzzleX = feet.x + (flip ? -20 : 20);
-      const muzzleY = feet.y - h * 0.52;
+      const muzzleY = feet.y - h * 0.52 + aimBob;
       const targetDirX = flip ? -1 : 1;
       ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
       ctx.lineWidth = 2;
@@ -308,8 +417,19 @@ export class StageNpcRenderer {
       ctx.fill();
     }
 
+    // Toy water gun nozzle droplet drip every 1.6s
+    const dripTime = (time % 1.6) / 1.6;
+    if (!isKO && dripTime < 0.6) {
+      const dripProg = dripTime / 0.6;
+      const dripY = (feet.y - h * 0.52 + aimBob) + dripProg * 18;
+      ctx.fillStyle = `rgba(56, 189, 248, ${(1 - dripProg) * 0.8})`;
+      ctx.beginPath();
+      ctx.arc(feet.x + (flip ? -20 : 20), dripY, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     // Comic KO status (no permanent distracting yellow billboard)
-    if (brat.state === 'KO') {
+    if (isKO) {
       ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
       ctx.fillRect(feet.x - 24, feet.y - h - 18, 48, 16);
       ctx.fillStyle = '#cbd5e1';
@@ -456,9 +576,10 @@ export class StageNpcRenderer {
 
   public renderRat(ctx: CanvasRenderingContext2D, camera: Camera, rat: AlleyRat): boolean {
     if (!this.rat) return false;
-    const feet = camera.worldToScreen(rat.x + rat.width / 2, rat.y + rat.height);
+    const feet = camera.worldToScreen(rat.x + rat.width / 2, rat.y + rat.height + 2);
     const h = 32;
     const w = h * (this.rat.naturalWidth / this.rat.naturalHeight);
+    const time = performance.now() / 1000;
 
     ctx.save();
     ctx.imageSmoothingEnabled = true;
@@ -468,6 +589,10 @@ export class StageNpcRenderer {
     this.drawGroundedShadow(ctx, feet.x, feet.y, w * 0.4, 4);
 
     const flip = rat.facing === 'left';
+    const isKO = rat.state === 'KO';
+    const tailWiggle = isKO ? 0 : Math.sin(time * 14.0) * 1.5;
+    const sniffBob = isKO ? 0 : Math.sin(time * 16.0) * 0.8;
+
     ctx.save();
     this.applyEnvironmentBlend(ctx, rat.state === 'HURT');
     const shakeX = rat.state === 'HURT' ? Math.sin(Date.now() * 0.05) * 3 : 0;
@@ -475,9 +600,9 @@ export class StageNpcRenderer {
     if (flip) {
       ctx.translate(feet.x + shakeX, 0);
       ctx.scale(-1, 1);
-      ctx.drawImage(this.rat, -Math.round(w / 2), Math.round(feet.y - h), w, h);
+      ctx.drawImage(this.rat, -Math.round(w / 2) + tailWiggle, Math.round(feet.y - h + sniffBob), w, h);
     } else {
-      ctx.drawImage(this.rat, Math.round(feet.x - w / 2) + shakeX, Math.round(feet.y - h), w, h);
+      ctx.drawImage(this.rat, Math.round(feet.x - w / 2) + shakeX + tailWiggle, Math.round(feet.y - h + sniffBob), w, h);
     }
     ctx.restore();
 

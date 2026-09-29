@@ -1444,13 +1444,6 @@ export class Renderer {
         this.renderEntityAlleyBrat(camera, brat);
       }
     }
-
-    // 10. Ambient Street NPCs (Chị Ba Nước Mía, Chú Bảy Sửa Xe, Bà Năm Ban Công)
-    if (hazards.streetNpcs && hazards.streetNpcs.length > 0) {
-      for (const npc of hazards.streetNpcs) {
-        this.renderStreetNpc(camera, npc, player.x);
-      }
-    }
   }
 
   private renderEntityAlleyBrat(camera: Camera, brat: AlleyBrat): void {
@@ -2446,7 +2439,14 @@ export class Renderer {
     if (this.v19Visuals.isReady()) for (const pickup of pickups) this.v19Visuals.renderPickup(this.ctx, camera, pickup);
     else PlaceholderRenderer.renderPickups(this.ctx, camera, pickups);
 
-    // 5. Entities (with safe fallback to placeholder)
+    // 5. Ambient Street NPCs (storefront sidewalk background layer behind combat entities)
+    if (stageHazards?.streetNpcs && stageHazards.streetNpcs.length > 0) {
+      for (const npc of stageHazards.streetNpcs) {
+        this.renderStreetNpc(camera, npc, player.x);
+      }
+    }
+
+    // 6. Entities (with safe fallback to placeholder)
     if (!this.stageNpc.render(this.ctx, camera, customer, player.x)) PlaceholderRenderer.renderNPC(this.ctx, camera, customer);
 
     for (const d of dogs) {
