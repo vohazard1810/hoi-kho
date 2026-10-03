@@ -109,24 +109,24 @@ export const STAGE_1_CONFIG = {
     { id: 'trash_c1', x: 1730, y: 602, width: 36, height: 18, damage: 0, parcelDamage: 3, type: 'trash' },
   ] as HazardData[],
 
-  // Spawners (managed by SpawnSystem)
+  // Spawners (managed by SpawnSystem with rhythmic breathing room between encounters)
   ENEMY_SPAWNS: [
-    // Zone A: Tutorial Dog
-    { id: 'dog_a', type: 'dog', spawnX: 520, spawnY: 588, triggerX: 180, zone: 'A' },
+    // Zone A: Tutorial Dog (triggers after player talks to Chị Ba and jumps initial platforms)
+    { id: 'dog_a', type: 'dog', spawnX: 540, spawnY: 588, triggerX: 360, zone: 'A' },
 
-    // Zone B: first pincer encounter — one threat ahead, one behind.
-    { id: 'dog_b', type: 'dog', spawnX: 1120, spawnY: 588, triggerX: 740, zone: 'B' },
-    { id: 'dog_b_rear', type: 'dog', spawnX: 700, spawnY: 588, triggerX: 740, zone: 'B' },
+    // Zone B: Pincer encounter on flat asphalt (triggers AFTER crossing pit and consulting Chú Bảy)
+    { id: 'dog_b', type: 'dog', spawnX: 1260, spawnY: 588, triggerX: 1080, zone: 'B' },
+    { id: 'dog_b_rear', type: 'dog', spawnX: 960, spawnY: 588, triggerX: 1080, zone: 'B' },
 
-    // Zone C: Rival drive-by plus a rear flank; jump/dodge has a real purpose.
-    { id: 'rival_c', type: 'rival', spawnX: 1720, spawnY: 556, triggerX: 1400, zone: 'C' },
-    { id: 'dog_c_flank', type: 'dog', spawnX: 1280, spawnY: 588, triggerX: 1400, zone: 'C' },
+    // Zone C: Rival drive-by duel (triggers on open street AFTER wooden incline and Bà Năm)
+    { id: 'rival_c', type: 'rival', spawnX: 1880, spawnY: 556, triggerX: 1680, zone: 'C' },
+    { id: 'dog_c_flank', type: 'dog', spawnX: 1540, spawnY: 588, triggerX: 1680, zone: 'C' },
 
-    // Zone D: miniboss supported from the player's rear.
-    { id: 'thug_d', type: 'thug', spawnX: 2360, spawnY: 546, triggerX: 2080, zone: 'D' },
-    { id: 'dog_d_flank', type: 'dog', spawnX: 1950, spawnY: 588, triggerX: 2080, zone: 'D' },
+    // Zone D: Miniboss Thug duel (triggers AFTER Alley Guard and Saboteur gauntlet)
+    { id: 'thug_d', type: 'thug', spawnX: 2580, spawnY: 546, triggerX: 2380, zone: 'D' },
+    { id: 'dog_d_flank', type: 'dog', spawnX: 2180, spawnY: 588, triggerX: 2380, zone: 'D' },
 
-    // Zone E: Stage Boss Chó Đại Ca
-    { id: 'boss_e', type: 'boss_dog', spawnX: 2980, spawnY: 568, triggerX: 2760, zone: 'E' },
+    // Zone E: Stage Boss Chó Đại Ca (exclusive grand arena)
+    { id: 'boss_e', type: 'boss_dog', spawnX: 3050, spawnY: 568, triggerX: 2760, zone: 'E' },
   ] as EnemySpawnData[],
 };

@@ -164,6 +164,10 @@ export function runV17Tests() {
     (stage as any).rivals = [];
     (stage as any).thugs = [];
     (stage as any).bossDogs = [];
+    (stage as any).rats = [];
+    (stage as any).saboteurs = [];
+    (stage as any).guards = [];
+    (stage as any).brats = [];
 
     objective.restoreSnapshot({ parcelCondition: 100, bonusReward: 0 });
 
@@ -196,6 +200,10 @@ export function runV17Tests() {
     (stage as any).rivals = [];
     (stage as any).thugs = [];
     (stage as any).bossDogs = [];
+    (stage as any).rats = [];
+    (stage as any).saboteurs = [];
+    (stage as any).guards = [];
+    (stage as any).brats = [];
 
     objective.restoreSnapshot({ parcelCondition: 100, bonusReward: 0 });
 
@@ -226,6 +234,10 @@ export function runV17Tests() {
     (stage as any).rivals = [];
     (stage as any).thugs = [];
     (stage as any).bossDogs = [];
+    (stage as any).rats = [];
+    (stage as any).saboteurs = [];
+    (stage as any).guards = [];
+    (stage as any).brats = [];
 
     objective.restoreSnapshot({ parcelCondition: 100, bonusReward: 0 });
 

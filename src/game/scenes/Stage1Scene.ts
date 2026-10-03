@@ -236,19 +236,19 @@ export class Stage1Scene implements Scene {
 
   private initStreetEnemies(): void {
     this.rats = [
-      new AlleyRat('rat_b1', 1060, 580, 'B'),
-      new AlleyRat('rat_c1', 1650, 580, 'C'),
+      new AlleyRat('rat_b1', 980, 580, 'B'),
+      new AlleyRat('rat_c1', 1520, 580, 'C'),
     ];
-    const sab = new SaboteurShipper('saboteur_c1', 1840, 546, 'C');
+    const sab = new SaboteurShipper('saboteur_c1', 1940, 546, 'C');
     sab.onThrowBananaPeel = (x, y) => {
       this.bananaTraps.push({ id: `peel_${Date.now()}_${Math.random()}`, x, y: 580, timer: 14.0 });
       this.audio.play('enemy_warning');
     };
     this.saboteurs = [sab];
     this.guards = [
-      new AlleyGuard('guard_d1', 2440, 538, 'D'),
+      new AlleyGuard('guard_d1', 2360, 538, 'D'),
     ];
-    const brat = new AlleyBrat('brat_b1', 1180, 442, 'B');
+    const brat = new AlleyBrat('brat_b1', 1320, 368, 'B');
     brat.onShootWater = (x, y) => {
       this.enemyProjectiles.push(
         new EnemyProjectile(brat.id, x, y, this.player.x + this.player.width / 2, this.player.y + this.player.height / 2)
@@ -262,7 +262,7 @@ export class Stage1Scene implements Scene {
     this.chibaHealed = false;
     this.chubayRefilled = false;
     this.streetNpcs = [
-      new NPC('npc_chiba', 260, 556, 'chiba', 'Chị Ba Nước Mía', 'Uống trà đá Chị Ba (Hồi 25 HP)', () => {
+      new NPC('npc_chiba', 220, 556, 'chiba', 'Chị Ba Nước Mía', 'Uống trà đá Chị Ba (Hồi 25 HP)', () => {
         if (!this.chibaHealed) {
           this.chibaHealed = true;
           this.player.hp = Math.min(this.player.maxHp, this.player.hp + 25);
@@ -273,7 +273,7 @@ export class Stage1Scene implements Scene {
           this.showPhoneAlert('CHỊ BA NƯỚC MÍA', 'Giao lẹ kẻo trời mưa ướt kiện hàng nghen em trai!', '🥤');
         }
       }),
-      new NPC('npc_chubay', 830, 556, 'chubay', 'Chú Bảy Vá Xe', 'Hỏi đường Chú Bảy Bơm Xe', () => {
+      new NPC('npc_chubay', 740, 556, 'chubay', 'Chú Bảy Vá Xe', 'Hỏi đường Chú Bảy Bơm Xe', () => {
         if (!this.chubayRefilled) {
           this.chubayRefilled = true;
           this.player.tapeCharges = this.player.maxTapeCharges;
@@ -284,7 +284,7 @@ export class Stage1Scene implements Scene {
           this.showPhoneAlert('CHÚ BẢY VÁ XE', 'Nhớ chú dặn đó, thấy vũng nước với bãi ve chai thì nhảy qua chứ đừng lao vào!', '🔧');
         }
       }),
-      new NPC('npc_banam', 1750, 376, 'banam', 'Bà Năm Ban Công', 'Bà Năm Hóng Chuyện', () => {
+      new NPC('npc_banam', 1420, 376, 'banam', 'Bà Năm Ban Công', 'Bà Năm Hóng Chuyện', () => {
         this.showPhoneAlert('BÀ NĂM BAN CÔNG', 'Mấy đứa bay giành đơn đừng có quẹt trúng chậu hoa lan của bà nghen! Thằng kia vừa ném vỏ chuối kìa!', '👵');
       }),
     ];
@@ -450,9 +450,9 @@ export class Stage1Scene implements Scene {
       this.initStreetEnemies();
     } else if (cp.zoneId === 'B') {
       this.rats = this.rats.filter((r) => r.zoneId !== 'B');
-      this.rats.push(new AlleyRat('rat_b1', 1060, 580, 'B'));
+      this.rats.push(new AlleyRat('rat_b1', 980, 580, 'B'));
       this.brats = this.brats.filter((b) => b.zoneId !== 'B');
-      const brat = new AlleyBrat('brat_b1', 1180, 442, 'B');
+      const brat = new AlleyBrat('brat_b1', 1320, 368, 'B');
       brat.onShootWater = (x, y) => {
         this.enemyProjectiles.push(
           new EnemyProjectile(brat.id, x, y, this.player.x + this.player.width / 2, this.player.y + this.player.height / 2)
@@ -462,9 +462,9 @@ export class Stage1Scene implements Scene {
       this.brats.push(brat);
     } else if (cp.zoneId === 'C') {
       this.rats = this.rats.filter((r) => r.zoneId !== 'C');
-      this.rats.push(new AlleyRat('rat_c1', 1650, 580, 'C'));
+      this.rats.push(new AlleyRat('rat_c1', 1520, 580, 'C'));
       this.saboteurs = this.saboteurs.filter((s) => s.zoneId !== 'C');
-      const sab = new SaboteurShipper('saboteur_c1', 1840, 546, 'C');
+      const sab = new SaboteurShipper('saboteur_c1', 1940, 546, 'C');
       sab.onThrowBananaPeel = (x, y) => {
         this.bananaTraps.push({ id: `peel_${Date.now()}_${Math.random()}`, x, y: 580, timer: 14.0 });
         this.audio.play('enemy_warning');
@@ -473,7 +473,7 @@ export class Stage1Scene implements Scene {
       this.bananaTraps = [];
     } else if (cp.zoneId === 'D') {
       this.guards = this.guards.filter((g) => g.zoneId !== 'D');
-      this.guards.push(new AlleyGuard('guard_d1', 2440, 538, 'D'));
+      this.guards.push(new AlleyGuard('guard_d1', 2360, 538, 'D'));
     }
 
     this.nearbyPrompt = null;
@@ -879,7 +879,7 @@ export class Stage1Scene implements Scene {
     }
 
     // 3c. Dynamic Motorbike Rush (Xe Ninja Lead)
-    if (!this.motorbike.triggeredZones.has('B') && this.player.x >= 950 && this.player.x <= 1300) {
+    if (!this.motorbike.triggeredZones.has('B') && this.player.x >= 1220 && this.player.x <= 1320) {
       this.motorbike.triggeredZones.add('B');
       this.motorbike.warning = true;
       this.motorbike.timer = 1.8;
@@ -888,7 +888,7 @@ export class Stage1Scene implements Scene {
       this.motorbike.vx = -620;
       this.audio.play('boss_warning');
     }
-    if (!this.motorbike.triggeredZones.has('D') && this.player.x >= 2250 && this.player.x <= 2600) {
+    if (!this.motorbike.triggeredZones.has('D') && this.player.x >= 2440 && this.player.x <= 2560) {
       this.motorbike.triggeredZones.add('D');
       this.motorbike.warning = true;
       this.motorbike.timer = 1.8;
@@ -942,16 +942,16 @@ export class Stage1Scene implements Scene {
       }
     }
 
-    // 3d. Dynamic Balcony Water Splash
+    // 3d. Dynamic Balcony Water Splash (Zone C laundry balcony only)
     this.waterSplash.timer -= dt;
     if (this.waterSplash.timer <= 0) {
       if (!this.waterSplash.warning && !this.waterSplash.active) {
-        if (this.player.x > 850 && this.player.x < 2200) {
+        if (this.player.x >= 1520 && this.player.x <= 1680) {
           this.waterSplash.warning = true;
           this.waterSplash.timer = 1.4;
           this.waterSplash.x = this.player.x + 90;
         } else {
-          this.waterSplash.timer = 5;
+          this.waterSplash.timer = 4;
         }
       } else if (this.waterSplash.warning) {
         this.waterSplash.warning = false;
@@ -965,7 +965,7 @@ export class Stage1Scene implements Scene {
           this.gameFeel.triggerComicText('NƯỚC TẠT ƯỚT HÀNG! -6%', this.player.x, this.player.y - 25, '#38bdf8');
         }
         this.waterSplash.active = false;
-        this.waterSplash.timer = 12;
+        this.waterSplash.timer = 15;
       }
     }
 
