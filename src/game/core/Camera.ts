@@ -77,9 +77,16 @@ export class Camera {
     const lerpFactor = 1 - Math.pow(1 - BALANCE.CAMERA_LERP, dt * 60);
     this.x += (targetCamX - this.x) * lerpFactor;
 
-    // Center vertical around target with bounds
-    const targetCamY = targetY - this.height * 0.65;
-    this.y += (targetCamY - this.y) * lerpFactor;
+    // Center vertical around target with vertical deadzone to prevent jump bobbing
+    const desiredCamY = targetY - this.height * 0.65;
+    const diffY = desiredCamY - this.y;
+    const deadzoneY = 46; // Smooth deadzone for jump stability
+    let targetCamY = this.y;
+    if (Math.abs(diffY) > deadzoneY) {
+      const shiftY = diffY > 0 ? diffY - deadzoneY : diffY + deadzoneY;
+      targetCamY = this.y + shiftY;
+    }
+    this.y += (targetCamY - this.y) * (lerpFactor * 0.85);
 
     this.clamp();
   }

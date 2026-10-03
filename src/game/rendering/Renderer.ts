@@ -48,7 +48,7 @@ export interface HubProgressOverlay {
 
 export interface StageHazardOverlay {
   droppedParcel: { x: number; y: number; condition?: number } | null;
-  motorbike: { active: boolean; warning: boolean; x: number; y: number; facing: 'left' | 'right' } | null;
+  motorbike: { active: boolean; warning: boolean; x: number; y: number; facing: 'left' | 'right'; timer?: number } | null;
   dogClamp: { active: boolean; mashRemaining: number } | null;
   waterSplash: { x: number; warning: boolean; active: boolean } | null;
   phoneAlert: { title: string; text: string; timer: number; icon: string } | null;
@@ -1255,84 +1255,126 @@ export class Renderer {
       if (mb.warning) {
         ctx.save();
         const pulse = 0.5 + Math.sin(performance.now() / 90) * 0.4;
-        const bannerW = 460;
-        const bannerH = 34;
-        const bannerX = 640 - bannerW / 2;
-        const bannerY = 150;
-        ctx.fillStyle = `rgba(220, 38, 38, ${0.85 + pulse * 0.15})`;
+        const remainTimer = mb.timer ?? 1.8;
+
+        // Ground Road Hazard Telegraph Lane (covers the asphalt road where the bike will rush)
+        const roadTop = camera.worldToScreen(camera.x, 565).y;
+        const roadBottom = camera.worldToScreen(camera.x, 630).y;
+        const roadH = Math.max(30, roadBottom - roadTop);
+
+        // Flashing amber/red hazard zone on asphalt
+        ctx.fillStyle = `rgba(220, 38, 38, ${0.20 + pulse * 0.12})`;
+        ctx.fillRect(0, roadTop, camera.width, roadH);
+
+        // Danger striped edge borders
+        ctx.strokeStyle = `rgba(251, 146, 60, ${0.75 + pulse * 0.25})`;
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([18, 12]);
+        ctx.beginPath();
+        ctx.moveTo(0, roadTop);
+        ctx.lineTo(camera.width, roadTop);
+        ctx.moveTo(0, roadBottom);
+        ctx.lineTo(camera.width, roadBottom);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Animated directional chevrons indicating approach trajectory
+        const arrowDir = mb.facing === 'left' ? -1 : 1;
+        const animOffset = (performance.now() * 0.35 * arrowDir) % 90;
+        ctx.fillStyle = '#fef08a';
+        ctx.font = '900 14px monospace';
+        ctx.textAlign = 'center';
+        for (let ax = 70 + animOffset; ax < camera.width + 90; ax += 180) {
+          ctx.fillText(mb.facing === 'left' ? '<<< ⚠️ XE NINJA LEAD' : 'XE NINJA LEAD ⚠️ >>>', ax, roadTop + roadH / 2 + 5);
+        }
+
+        // Flashing headlight flare on approach screen edge
+        const entryX = mb.facing === 'left' ? camera.width : 0;
+        const entryGrad = ctx.createRadialGradient(entryX, roadTop + roadH / 2, 10, entryX, roadTop + roadH / 2, 280);
+        entryGrad.addColorStop(0, `rgba(254, 240, 138, ${0.5 + pulse * 0.3})`);
+        entryGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+        ctx.fillStyle = entryGrad;
+        ctx.fillRect(mb.facing === 'left' ? camera.width - 280 : 0, roadTop - 30, 280, roadH + 60);
+
+        // Top warning banner
+        const bannerW = 540;
+        const bannerH = 36;
+        const bannerX = (camera.width - bannerW) / 2;
+        const bannerY = 100;
+        ctx.fillStyle = `rgba(185, 28, 28, ${0.92 + pulse * 0.08})`;
         ctx.fillRect(bannerX, bannerY, bannerW, bannerH);
         ctx.strokeStyle = '#fef08a';
         ctx.lineWidth = 2;
         ctx.strokeRect(bannerX, bannerY, bannerW, bannerH);
-        ctx.font = '900 14px system-ui';
+        ctx.font = '900 13px system-ui';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
-        ctx.fillText('⚠️ BÍP BÍP! XE NINJA LEAD SẮP LAO QUA HẺM! (NHẢY LÊN ĐỂ NÉ!) 🛵', 640, bannerY + 22);
+        ctx.fillText(`⚠️ BÍP BÍP! XE NINJA LEAD SẮP LAO QUA! (${remainTimer.toFixed(1)}s • NHẢY LÊN ĐỂ NÉ!) 🛵`, camera.width / 2, bannerY + 23);
         ctx.restore();
       } else if (mb.active) {
         const bikeScreen = camera.worldToScreen(mb.x, mb.y);
         ctx.save();
-        // Headlight beam casting forward
+
+        // 1. Dynamic Headlight Beam casting forward onto asphalt
         const beamDir = mb.facing === 'right' ? 1 : -1;
         const beamGrad = ctx.createRadialGradient(
           bikeScreen.x + beamDir * 20, bikeScreen.y, 10,
-          bikeScreen.x + beamDir * 180, bikeScreen.y, 140
+          bikeScreen.x + beamDir * 260, bikeScreen.y, 160
         );
-        beamGrad.addColorStop(0, 'rgba(254, 240, 138, 0.6)');
+        beamGrad.addColorStop(0, 'rgba(254, 240, 138, 0.75)');
+        beamGrad.addColorStop(0.35, 'rgba(254, 240, 138, 0.3)');
         beamGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
         ctx.fillStyle = beamGrad;
         ctx.beginPath();
-        ctx.moveTo(bikeScreen.x + beamDir * 20, bikeScreen.y - 10);
-        ctx.lineTo(bikeScreen.x + beamDir * 220, bikeScreen.y - 45);
-        ctx.lineTo(bikeScreen.x + beamDir * 220, bikeScreen.y + 45);
+        ctx.moveTo(bikeScreen.x + beamDir * 20, bikeScreen.y - 12);
+        ctx.lineTo(bikeScreen.x + beamDir * 270, bikeScreen.y - 50);
+        ctx.lineTo(bikeScreen.x + beamDir * 270, bikeScreen.y + 35);
         ctx.closePath();
         ctx.fill();
 
-        // Lead Scooter Body
-        ctx.translate(bikeScreen.x, bikeScreen.y);
-        if (mb.facing === 'left') ctx.scale(-1, 1);
-
-        // Scooter frame & wheels
-        ctx.fillStyle = '#1e293b';
+        // 2. Road contact shadow underneath tires
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.6)';
         ctx.beginPath();
-        ctx.arc(-24, 20, 14, 0, Math.PI * 2);
-        ctx.arc(28, 20, 14, 0, Math.PI * 2);
+        ctx.ellipse(bikeScreen.x, bikeScreen.y + 4, 70, 13, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Lead chassis
-        ctx.fillStyle = '#f43f5e';
-        ctx.beginPath();
-        ctx.moveTo(-28, 14);
-        ctx.lineTo(16, 14);
-        ctx.lineTo(24, -12);
-        ctx.lineTo(12, -26);
-        ctx.lineTo(-12, -18);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = '#fda4af';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        // 3. Render genuine cel-shaded Ninja Lead sprite
+        const rendered = this.v19Visuals.renderNinjaLead(ctx, camera, mb.x, mb.y, mb.facing);
+        if (!rendered) {
+          // Geometric fallback if asset is loading
+          ctx.save();
+          ctx.translate(bikeScreen.x, bikeScreen.y);
+          if (mb.facing === 'left') ctx.scale(-1, 1);
+          ctx.fillStyle = '#1e293b';
+          ctx.beginPath();
+          ctx.arc(-24, 16, 14, 0, Math.PI * 2);
+          ctx.arc(28, 16, 14, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#f43f5e';
+          ctx.beginPath();
+          ctx.moveTo(-28, 10); ctx.lineTo(16, 10); ctx.lineTo(24, -14); ctx.lineTo(12, -26); ctx.lineTo(-12, -18);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
 
-        // Ninja rider coat
-        ctx.fillStyle = '#fb923c';
-        ctx.beginPath();
-        ctx.ellipse(0, -32, 14, 18, 0.2, 0, Math.PI * 2);
-        ctx.fill();
-        // Helmet with visor
-        ctx.fillStyle = '#0f172a';
-        ctx.beginPath();
-        ctx.arc(6, -50, 12, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#38bdf8';
-        ctx.fillRect(8, -52, 9, 5);
+        // 4. Exhaust dust cloud puffs behind rear wheel
+        const dustDir = mb.facing === 'left' ? 1 : -1;
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.4)';
+        for (let d = 0; d < 3; d++) {
+          const dx = bikeScreen.x + dustDir * (52 + d * 22);
+          const dy = bikeScreen.y - 4 + d * 3;
+          ctx.beginPath();
+          ctx.arc(dx, dy, 12 - d * 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
-        // Speed lines and sound tag
-        ctx.restore();
-        ctx.save();
-        ctx.font = 'italic 900 16px system-ui';
+        // 5. Comic Action callout
+        ctx.font = 'italic 900 15px system-ui';
         ctx.fillStyle = '#fde047';
         ctx.textAlign = 'center';
-        ctx.fillText('VROOOOOOM!! 🛵💨', bikeScreen.x, bikeScreen.y - 65);
+        ctx.fillText('VROOOOOOM!! 🛵💨', bikeScreen.x, bikeScreen.y - 125);
+
         ctx.restore();
       }
     }
@@ -2333,34 +2375,36 @@ export class Renderer {
       ctx.restore();
     }
 
-    // 2. Smartphone Notification Distress Bubble (Bottom-Right)
+    // 2. Secondary Smartphone Notification Distress Bubble (Fixed slot below Debt panel)
     if (hazards.phoneAlert && hazards.phoneAlert.timer > 0) {
       const alert = hazards.phoneAlert;
       ctx.save();
-      const notifW = 340;
-      const notifH = 68;
-      const notifX = 1280 - notifW - 20;
-      const notifY = 620;
+      const notifW = 290;
+      const notifH = 52;
+      const notifX = 1260 - notifW;
+      const notifY = 82;
 
       ctx.globalAlpha = Math.min(1, alert.timer * 1.5);
 
       // Glassmorphic panel
       ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
-      ctx.fillRect(notifX, notifY, notifW, notifH);
+      ctx.beginPath();
+      ctx.roundRect(notifX, notifY, notifW, notifH, 6);
+      ctx.fill();
       ctx.strokeStyle = alert.title.includes('F89') ? '#ef4444' : '#f59e0b';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(notifX, notifY, notifW, notifH);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
 
       // App Header with Icon
       ctx.fillStyle = alert.title.includes('F89') ? '#fca5a5' : '#fde68a';
-      ctx.font = 'bold 12px system-ui';
+      ctx.font = 'bold 11px system-ui';
       ctx.textAlign = 'left';
-      ctx.fillText(`${alert.icon} ${alert.title}`, notifX + 12, notifY + 22);
+      ctx.fillText(`${alert.icon} ${alert.title}`, notifX + 10, notifY + 18);
 
       // Body text
       ctx.fillStyle = '#f8fafc';
-      ctx.font = '11px system-ui';
-      ctx.fillText(alert.text, notifX + 12, notifY + 44, notifW - 24);
+      ctx.font = '10.5px system-ui';
+      ctx.fillText(alert.text, notifX + 10, notifY + 36, notifW - 20);
 
       ctx.restore();
     }

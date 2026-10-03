@@ -610,7 +610,7 @@ export class Stage1Scene implements Scene {
       this.sceneManager.switchScene('RESULT');
       return;
     }
-    if (objective.state === 'IN_DELIVERY') {
+    if (objective.state === 'IN_DELIVERY' && !this.dialogue.isActive()) {
       this.stageTimer = Math.max(0, this.stageTimer - dt);
       if (this.stageTimer <= 0) {
         objective.failDelivery(this.player.hp, 'TIME_EXPIRED');
@@ -907,27 +907,37 @@ export class Stage1Scene implements Scene {
       }
     } else if (this.motorbike.active) {
       this.motorbike.x += this.motorbike.vx * dt;
-      const pCenterX = this.player.x + this.player.width / 2;
-      const mbDist = Math.abs(pCenterX - this.motorbike.x);
-      if (mbDist < 48 && this.player.isGrounded && this.player.actionState !== 'DODGE') {
-        this.player.takeDamage(18, -320, 220, this.motorbike.x);
-        this.audio.play('hit_heavy');
-        this.gameFeel.triggerPlayerDamaged(this.player.x, this.player.y);
-        this.gameFeel.triggerComicText('ĐÂM XE LEAD! -18 HP', this.player.x, this.player.y - 30, '#ef4444');
-        if (!this.isParcelDropped) {
-          this.dropParcel(this.player.x, this.player.y - 10, -180, -220);
+      const isVisibleOnScreen =
+        this.motorbike.x >= this.camera.x - 50 &&
+        this.motorbike.x <= this.camera.x + this.camera.width + 50;
+
+      if (isVisibleOnScreen) {
+        const pCenterX = this.player.x + this.player.width / 2;
+        const mbDist = Math.abs(pCenterX - this.motorbike.x);
+        const playerFeetY = this.player.y + this.player.height;
+        // Collision strictly matches visible vehicle body and height (jump over is safe!)
+        const isBodyIntersecting = mbDist < 56 && playerFeetY > 545;
+
+        if (isBodyIntersecting && this.player.actionState !== 'DODGE') {
+          this.player.takeDamage(18, -320, 220, this.motorbike.x);
+          this.audio.play('hit_heavy');
+          this.gameFeel.triggerPlayerDamaged(this.player.x, this.player.y);
+          this.gameFeel.triggerComicText('ĐÂM XE LEAD! -18 HP', this.player.x, this.player.y - 30, '#ef4444');
+          if (!this.isParcelDropped) {
+            this.dropParcel(this.player.x, this.player.y - 10, -180, -220);
+          }
+        }
+
+        const allEnemies = [...this.dogs, ...this.rivals, ...this.thugs, ...this.bossDogs];
+        for (const e of allEnemies) {
+          if (!e.isAlive) continue;
+          if (Math.abs(e.x + e.width / 2 - this.motorbike.x) < 45) {
+            e.takeDamage(30, 0, -280, 180, this.motorbike.x);
+          }
         }
       }
 
-      const allEnemies = [...this.dogs, ...this.rivals, ...this.thugs, ...this.bossDogs];
-      for (const e of allEnemies) {
-        if (!e.isAlive) continue;
-        if (Math.abs(e.x + e.width / 2 - this.motorbike.x) < 40) {
-          e.takeDamage(30, 0, -280, 180, this.motorbike.x);
-        }
-      }
-
-      if (this.motorbike.x < this.camera.x - 200 || this.motorbike.x > this.camera.x + 1480) {
+      if (this.motorbike.x < this.camera.x - 220 || this.motorbike.x > this.camera.x + this.camera.width + 220) {
         this.motorbike.active = false;
       }
     }
@@ -1748,6 +1758,7 @@ export class Stage1Scene implements Scene {
         x: this.motorbike.x,
         y: this.motorbike.y,
         facing: this.motorbike.facing,
+        timer: this.motorbike.timer,
       } : null,
       dogClamp: this.dogClamp.active ? { active: true, mashRemaining: this.dogClamp.mashRemaining } : null,
       waterSplash: (this.waterSplash.warning || this.waterSplash.active) ? {

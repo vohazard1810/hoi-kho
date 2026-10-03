@@ -289,11 +289,23 @@ export class PlaceholderRenderer {
       y: feet.y - player.height,
     };
 
-    // Invulnerability flashing or dodge transparency
+    // Main character visibility contract: player always solid & easily readable (>= 0.95 alpha)
+    ctx.globalAlpha = 1.0;
     if (player.actionState === 'DODGE') {
-      ctx.globalAlpha = 0.5;
-    } else if (player.isInvulnerable && Math.floor(Date.now() / 80) % 2 === 0) {
-      ctx.globalAlpha = 0.4;
+      // Crisp speed shadow silhouette instead of fading body out
+      ctx.save();
+      ctx.globalAlpha = 0.38;
+      const trailOffX = player.facing === 'right' ? -16 : 16;
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.roundRect(pos.x + trailOffX + 5, pos.y + 18, player.width - 10, player.height - 36, 4);
+      ctx.fill();
+      ctx.restore();
+    } else if (player.isInvulnerable) {
+      // Golden protective comic halo for I-frames
+      const iPulse = 0.5 + Math.sin(performance.now() / 90) * 0.5;
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 8 + iPulse * 6;
     }
 
     // Floor shadow

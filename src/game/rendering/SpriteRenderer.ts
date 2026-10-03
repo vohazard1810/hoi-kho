@@ -200,7 +200,38 @@ export class SpriteRenderer {
     const worldAnchorX = player.x + player.width / 2;
     const worldAnchorY = player.y + player.height;
 
-    return this.renderCharacter(
+    // Dodge speed silhouette trail (replaces low opacity flicker)
+    if (player.actionState === 'DODGE') {
+      const trailOffX = player.facing === 'right' ? -18 : 18;
+      ctx.save();
+      ctx.globalAlpha = 0.32;
+      this.renderCharacter(
+        ctx,
+        camera,
+        playerSet,
+        animState,
+        player.animTime,
+        worldAnchorX + trailOffX,
+        worldAnchorY,
+        player.facing,
+        playerSet.manifest.scale * visualScale,
+        false
+      );
+      ctx.restore();
+    }
+
+    ctx.save();
+    // Consistent state signals: golden halo for I-frames, red comic rim for hurt
+    if (player.isInvulnerable) {
+      const iPulse = 0.5 + Math.sin(performance.now() / 90) * 0.5;
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 10 + iPulse * 6;
+    } else if (player.actionState === 'HURT') {
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 12;
+    }
+
+    const result = this.renderCharacter(
       ctx,
       camera,
       playerSet,
@@ -212,6 +243,9 @@ export class SpriteRenderer {
       playerSet.manifest.scale * visualScale,
       true
     );
+    ctx.restore();
+
+    return result;
   }
 
   public static renderDog(

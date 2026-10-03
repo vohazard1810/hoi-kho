@@ -180,6 +180,11 @@ export class ParallaxBackgroundRenderer {
       ) {
         ctx.drawImage(image, Math.round(tileWorldX - camera.x), screen.y, image.width, image.height);
       }
+      // Unified Walkable Surface Contract: crisp top curb highlight on walkable street
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.42)';
+      ctx.fillRect(screen.x, screen.y, segment.width, 2);
+      ctx.fillStyle = '#fde68a';
+      ctx.fillRect(screen.x, screen.y + 2, segment.width, 1);
       ctx.restore();
     }
   }

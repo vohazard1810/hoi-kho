@@ -192,14 +192,14 @@ export class EquipmentVisualRenderer {
     const x = 390;
     const y = 650;
     const w = 500;
-    const h = 58;
+    const h = 48;
 
     ctx.save();
 
     // 1. Console drop shadow
     ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
-    ctx.shadowBlur = 16;
-    ctx.shadowOffsetY = 4;
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 3;
 
     // Chamfered cyber console chassis
     ctx.beginPath();
@@ -223,7 +223,7 @@ export class EquipmentVisualRenderer {
 
     // Dual-layer metallic & neon cyber border
     ctx.strokeStyle = 'rgba(71, 85, 105, 0.6)';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.2;
     ctx.stroke();
 
     // Top orange neon accent strip
@@ -236,9 +236,9 @@ export class EquipmentVisualRenderer {
 
     // 2. Parts counter module on left
     const px = x + 8;
-    const py = y + 7;
+    const py = y + 5;
     const pw = 84;
-    const ph = 44;
+    const ph = 38;
 
     ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
     ctx.fillRect(px, py, pw, ph);
@@ -312,12 +312,12 @@ export class EquipmentVisualRenderer {
 
     const slotStartX = x + 100;
     const slotW = 90;
-    const slotH = 44;
+    const slotH = 38;
     const slotGap = 8;
 
     slots.forEach((slot, idx) => {
       const sx = slotStartX + idx * (slotW + slotGap);
-      const sy = y + 7;
+      const sy = y + 5;
 
       const cooldown = slot.branch === 'L' ? player?.dodgeCooldownRemaining : slot.branch === 'K' ? player?.tapeCooldownRemaining : 0;
       const ready = slot.branch === 'Q' && (player?.momentum ?? 0) >= 100;

@@ -104,10 +104,14 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Canvas Stage (16:9 1280x720 Logical Viewport) */}
+      {/* Main Canvas Stage (16:9 1280x720 Logical Viewport, constrained to viewport height) */}
       <main
         id="canvas_wrapper"
         className="relative w-full max-w-[1280px] aspect-[16/9] bg-black border-x border-b border-slate-800 shadow-2xl overflow-hidden"
+        style={{
+          maxHeight: 'calc(100vh - 84px)',
+          maxWidth: 'min(1280px, calc((100vh - 84px) * 16 / 9))',
+        }}
       >
         <canvas
           id="game_canvas"

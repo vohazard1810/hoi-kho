@@ -4,7 +4,7 @@ import { Pickup } from '../entities/Pickup';
 import { Rival } from '../entities/Rival';
 
 type AssetKey = PickupType | 'PARCEL_PRISTINE' | 'PARCEL_DENTED' | 'PARCEL_CRACKED' |
-  'PARCEL_CRITICAL' | 'RIVAL_DRIVEBY' | 'RIVAL_WRECK' | 'PROLOGUE_1' | 'PROLOGUE_2' |
+  'PARCEL_CRITICAL' | 'RIVAL_DRIVEBY' | 'RIVAL_WRECK' | 'NINJA_LEAD' | 'PROLOGUE_1' | 'PROLOGUE_2' |
   'PROLOGUE_3' | 'PROLOGUE_4';
 
 const FILES: Record<AssetKey, string> = {
@@ -19,6 +19,7 @@ const FILES: Record<AssetKey, string> = {
   PARCEL_CRITICAL: '/assets/parcels/fragile_critical.png',
   RIVAL_DRIVEBY: '/assets/rival/rival_driveby.png',
   RIVAL_WRECK: '/assets/rival/rival_wreck.png',
+  NINJA_LEAD: '/assets/hazards/ninja_lead.png',
   PROLOGUE_1: '/assets/prologue/beat_1_debt.png',
   PROLOGUE_2: '/assets/prologue/beat_2_bridge.png',
   PROLOGUE_3: '/assets/prologue/beat_3_flyer.png',
@@ -125,5 +126,30 @@ export class ProductionVisualsV19 {
       ctx.restore();
     }
     return false;
+  }
+
+  public renderNinjaLead(
+    ctx: CanvasRenderingContext2D,
+    camera: Camera,
+    x: number,
+    y: number,
+    facing: 'left' | 'right'
+  ): boolean {
+    const image = this.images.get('NINJA_LEAD');
+    if (!this.ready || !image) return false;
+    const pos = camera.worldToScreen(x, y);
+    // Render high-res scooter matching gameplay scale
+    const drawW = 160;
+    const drawH = 134; // matches aspect ratio ~260x217
+    ctx.save();
+    if (facing === 'right') {
+      ctx.translate(pos.x, pos.y);
+      ctx.scale(-1, 1);
+      ctx.drawImage(image, -drawW / 2, -drawH + 18, drawW, drawH);
+    } else {
+      ctx.drawImage(image, pos.x - drawW / 2, pos.y - drawH + 18, drawW, drawH);
+    }
+    ctx.restore();
+    return true;
   }
 }

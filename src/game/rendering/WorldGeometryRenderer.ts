@@ -57,6 +57,14 @@ export class WorldGeometryRenderer {
       const screen = camera.worldToScreen(platform.x, platform.y);
       if (screen.x + platform.width < 0 || screen.x > camera.width) continue;
       ctx.drawImage(image, screen.x, screen.y, platform.width, 64);
+
+      // Unified Walkable Surface Contract: crisp warm amber/white top edge highlight
+      ctx.save();
+      ctx.fillStyle = '#fde68a';
+      ctx.fillRect(screen.x, screen.y, platform.width, 2.5);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.fillRect(screen.x + 2, screen.y, platform.width - 4, 1);
+      ctx.restore();
     }
     return true;
   }

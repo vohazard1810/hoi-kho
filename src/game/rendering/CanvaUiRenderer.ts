@@ -258,29 +258,60 @@ export class CanvaUiRenderer {
     ctx.restore();
 
     // 3. SXP Minimalist Logo & Header
-    this.drawSxpLogo(ctx, receiptX + receiptW / 2 - 20, receiptY + 54, 0.82);
+    this.drawSxpLogo(ctx, receiptX + receiptW / 2 - 20, receiptY + 48, 0.78);
 
     ctx.save();
     ctx.fillStyle = '#0f172a';
     ctx.font = '800 15px system-ui, -apple-system, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('BIÊN NHẬN QUYẾT TOÁN CA GIAO HÀNG', receiptX + receiptW / 2, receiptY + 104);
+    ctx.fillText('BIÊN NHẬN QUYẾT TOÁN CA GIAO HÀNG', receiptX + receiptW / 2, receiptY + 92);
 
     // Monospaced metadata
     ctx.fillStyle = '#475569';
-    ctx.font = 'bold 11px monospace';
-    ctx.fillText('Số HĐ: SXP-2026-SG01 • Giờ in: 17:45:12', receiptX + receiptW / 2, receiptY + 124);
-    ctx.fillText('Tài xế: Khờ (#SXP-099) • Nhận: Chú Tư (Hẻm 89)', receiptX + receiptW / 2, receiptY + 140);
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('Số HĐ: SXP-2026-SG01 • Giờ in: 17:45:12', receiptX + receiptW / 2, receiptY + 110);
+    ctx.fillText('Tài xế: Khờ (#SXP-099) • Nhận: Chú Tư (Hẻm 89)', receiptX + receiptW / 2, receiptY + 124);
 
-    // Thermal Barcode
-    this.drawThermalBarcode(ctx, receiptX + 50, receiptY + 154, receiptW - 100, 36, '*SXP-SETTLEMENT-DEBT-F89*');
+    // Dedicated Status & Termination Reason Banner (Zero overlap, high contrast)
+    const isSuccess = result.success;
+    const statusBoxY = receiptY + 134;
+    const statusBoxH = 46;
+    const statusBoxW = receiptW - 56;
+    const statusBoxX = receiptX + 28;
+
+    ctx.fillStyle = isSuccess ? '#ecfdf5' : '#fff1f2';
+    ctx.beginPath();
+    ctx.roundRect(statusBoxX, statusBoxY, statusBoxW, statusBoxH, 6);
+    ctx.fill();
+    ctx.strokeStyle = isSuccess ? '#059669' : '#e11d48';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+
+    ctx.font = '900 13px system-ui, sans-serif';
+    ctx.fillStyle = isSuccess ? '#047857' : '#be123c';
+    ctx.textAlign = 'center';
+    ctx.fillText(isSuccess ? '★ GIAO HÀNG THÀNH CÔNG ★' : '⚠ GIAO HÀNG THẤT BẠI ⚠', receiptX + receiptW / 2, statusBoxY + 19);
+
+    let reasonText = 'ĐÃ BÀN GIAO KIỆN TẬN TAY KHÁCH HÀNG';
+    if (!isSuccess) {
+      if (result.parcelCondition <= 0) {
+        reasonText = 'LÝ DO: KIỆN HÀNG BỊ HƯ HỎNG TOÀN BỘ (0%)';
+      } else if (result.remainingHp <= 0) {
+        reasonText = 'LÝ DO: SHIPPER BỊ ĐÁNH GỤC TRÊN ĐƯỜNG GIAO';
+      } else {
+        reasonText = 'LÝ DO: QUÁ HẠN THỜI GIAN GIAO HÀNG';
+      }
+    }
+    ctx.font = 'bold 10px monospace';
+    ctx.fillStyle = isSuccess ? '#065f46' : '#9f1239';
+    ctx.fillText(reasonText, receiptX + receiptW / 2, statusBoxY + 36);
 
     // Dashed divider line
     const drawDashedLine = (y: number) => {
       ctx.save();
       ctx.strokeStyle = '#cbd5e1';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([6, 5]);
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([5, 4]);
       ctx.beginPath();
       ctx.moveTo(receiptX + 28, y);
       ctx.lineTo(receiptX + receiptW - 28, y);
@@ -288,7 +319,12 @@ export class CanvaUiRenderer {
       ctx.restore();
     };
 
-    drawDashedLine(receiptY + 215);
+    drawDashedLine(receiptY + 190);
+
+    // Thermal Barcode
+    this.drawThermalBarcode(ctx, receiptX + 54, receiptY + 198, receiptW - 108, 24, '*SXP-SETTLEMENT-DEBT-F89*');
+
+    drawDashedLine(receiptY + 252);
 
     // Calculations based on actual run data
     const shownGross = Math.round(BALANCE.BASE_REWARD * progress);
@@ -310,7 +346,7 @@ export class CanvaUiRenderer {
         bold: false,
       },
       {
-        label: `Kiện hàng (${parcelPct}% độ bền):`,
+        label: `Tình trạng kiện (${parcelPct}% độ bền):`,
         val: shownPenalty > 0 ? `-${shownPenalty.toLocaleString('vi-VN')} đ` : `+0 đ (ĐẠT)`,
         color: shownPenalty > 0 ? '#dc2626' : '#16a34a',
         bold: false,
@@ -329,22 +365,21 @@ export class CanvaUiRenderer {
       },
     ];
 
-    let rowY = receiptY + 242;
-    const rowGap = 32;
+    let rowY = receiptY + 276;
+    const rowGap = 26;
 
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
-      // Progressive line reveal
       const lineThreshold = (i + 1) / (items.length + 2);
       if (progress >= lineThreshold * 0.7) {
         ctx.textAlign = 'left';
         ctx.fillStyle = '#334155';
-        ctx.font = it.bold ? 'bold 13px system-ui' : '13px system-ui';
+        ctx.font = it.bold ? 'bold 12px system-ui' : '12px system-ui';
         ctx.fillText(it.label, receiptX + 38, rowY);
 
         ctx.textAlign = 'right';
         ctx.fillStyle = it.color;
-        ctx.font = it.bold ? 'bold 15px monospace' : '14px monospace';
+        ctx.font = it.bold ? 'bold 14px monospace' : '13px monospace';
         ctx.fillText(it.val, receiptX + receiptW - 38, rowY);
       }
       rowY += rowGap;
@@ -352,79 +387,70 @@ export class CanvaUiRenderer {
 
     drawDashedLine(rowY + 6);
 
-    // Summary Highlight Boxes (Canva Card Style inside receipt)
-    const summaryBoxY = rowY + 22;
+    // Summary Highlight Boxes (Dedicated zones, high contrast, zero overlap)
+    const summaryBoxY = rowY + 18;
 
     // 1. Thực nhận vào ví trả nợ
     ctx.fillStyle = '#f1f5f9';
     ctx.beginPath();
-    ctx.roundRect(receiptX + 32, summaryBoxY, receiptW - 64, 48, 8);
+    ctx.roundRect(receiptX + 28, summaryBoxY, receiptW - 56, 44, 6);
     ctx.fill();
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#0f172a';
-    ctx.font = '800 13px system-ui';
-    ctx.fillText('THỰC NHẬN VÀO VÍ TRẢ NỢ:', receiptX + 46, summaryBoxY + 29);
+    ctx.font = '800 12px system-ui';
+    ctx.fillText('THỰC NHẬN VÀO VÍ TRẢ NỢ:', receiptX + 42, summaryBoxY + 27);
 
     ctx.textAlign = 'right';
     ctx.fillStyle = '#16a34a';
-    ctx.font = '900 18px monospace';
-    ctx.fillText(`+${shownIncome.toLocaleString('vi-VN')} đ`, receiptX + receiptW - 46, summaryBoxY + 30);
+    ctx.font = '900 17px monospace';
+    ctx.fillText(`+${shownIncome.toLocaleString('vi-VN')} đ`, receiptX + receiptW - 42, summaryBoxY + 28);
 
     // 2. Dư nợ App F89 còn lại
-    const debtBoxY = summaryBoxY + 56;
+    const debtBoxY = summaryBoxY + 52;
     ctx.fillStyle = '#fff1f2';
     ctx.beginPath();
-    ctx.roundRect(receiptX + 32, debtBoxY, receiptW - 64, 48, 8);
+    ctx.roundRect(receiptX + 28, debtBoxY, receiptW - 56, 44, 6);
     ctx.fill();
+    ctx.strokeStyle = '#fecdd3';
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#9f1239';
-    ctx.font = '800 13px system-ui';
-    ctx.fillText('DƯ NỢ APP F89 CÒN LẠI:', receiptX + 46, debtBoxY + 29);
+    ctx.font = '800 12px system-ui';
+    ctx.fillText('DƯ NỢ APP F89 CÒN LẠI:', receiptX + 42, debtBoxY + 27);
 
     ctx.textAlign = 'right';
     ctx.fillStyle = '#e11d48';
-    ctx.font = '900 18px monospace';
-    ctx.fillText(`${shownDebt.toLocaleString('vi-VN')} đ`, receiptX + receiptW - 46, debtBoxY + 30);
+    ctx.font = '900 17px monospace';
+    ctx.fillText(`${shownDebt.toLocaleString('vi-VN')} đ`, receiptX + receiptW - 42, debtBoxY + 28);
 
-    // 4. Vintage Rubber Stamp (Pops on when progress >= 0.75)
-    if (progress >= 0.75) {
-      const stampScale = Math.min(1.0, 0.7 + (progress - 0.75) * 1.5);
-      const isSuccess = result.success;
-      this.drawRubberStamp(
-        ctx,
-        receiptX + receiptW / 2 + 10,
-        debtBoxY + 68,
-        isSuccess ? '★ SXP ĐÃ QUYẾT TOÁN ★' : '⚠ GIAO THẤT BẠI ⚠',
-        isSuccess ? '28/09/2026 • GIAO THÀNH CÔNG' : 'KIỆN HÀNG HƯ HỎNG • PHẠT NỢ',
-        -7,
-        stampScale
-      );
-    }
-
-    // 5. Canva Gradient Pill CTA Button (at bottom)
-    const btnY = receiptY + receiptH - 66;
-    const btnW = 290;
-    const btnH = 44;
+    // 3. Canva Pill CTA Button (at bottom)
+    const btnY = receiptY + receiptH - 62;
+    const btnW = 310;
+    const btnH = 42;
     const btnX = receiptX + (receiptW - btnW) / 2;
 
     const btnGrad = ctx.createLinearGradient(btnX, btnY, btnX + btnW, btnY + btnH);
-    btnGrad.addColorStop(0, '#ec4899');
-    btnGrad.addColorStop(0.5, '#8b5cf6');
-    btnGrad.addColorStop(1, '#06b6d4');
+    btnGrad.addColorStop(0, '#ea580c');
+    btnGrad.addColorStop(0.5, '#f97316');
+    btnGrad.addColorStop(1, '#fb923c');
 
     ctx.save();
-    ctx.shadowColor = 'rgba(236, 72, 153, 0.45)';
-    ctx.shadowBlur = 16;
+    ctx.shadowColor = 'rgba(234, 88, 12, 0.45)';
+    ctx.shadowBlur = 14;
     ctx.fillStyle = btnGrad;
     ctx.beginPath();
-    ctx.roundRect(btnX, btnY, btnW, btnH, 22);
+    ctx.roundRect(btnX, btnY, btnW, btnH, 21);
     ctx.fill();
     ctx.restore();
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.font = '900 13px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('TIẾP TỤC TRẢ NỢ (SPACE)', receiptX + receiptW / 2, btnY + btnH / 2);
